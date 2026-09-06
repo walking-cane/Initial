@@ -26,6 +26,7 @@ protected:
 	
 	UPROPERTY(BlueprintReadOnly) bool bIsMoving;
 	UPROPERTY(BlueprintReadOnly) bool bIsFalling;
+	UPROPERTY(BlueprintReadOnly) bool bIsCrouching;
 	UPROPERTY(BlueprintReadOnly) float AimYaw = 0.f;
 	UPROPERTY(BlueprintReadOnly) float AimPitch = 0.f;
 	UPROPERTY(BlueprintReadOnly) float AimOffsetAlpha = 0.f;

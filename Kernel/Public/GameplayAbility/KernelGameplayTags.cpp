@@ -15,6 +15,7 @@ UE_DEFINE_GAMEPLAY_TAG(TAG_Input_WeaponSwap,            "InputTag.Weapon.Swap");
 UE_DEFINE_GAMEPLAY_TAG(TAG_Input_MouseLook,             "InputTag.Look.Mouse");
 UE_DEFINE_GAMEPLAY_TAG(TAG_Input_Move,                  "InputTag.Move");
 UE_DEFINE_GAMEPLAY_TAG(TAG_Input_Sprint,                "InputTag.Sprint");
+UE_DEFINE_GAMEPLAY_TAG(TAG_Input_Crouch,                "InputTag.Crouch");
 UE_DEFINE_GAMEPLAY_TAG(TAG_Input_Blocked,               "Status.Block.Input");
 UE_DEFINE_GAMEPLAY_TAG(TAG_Input_Inventory,             "InputTag.Inventory");
 UE_DEFINE_GAMEPLAY_TAG(TAG_Input_ScoreBoard,            "InputTag.ScoreBoard");

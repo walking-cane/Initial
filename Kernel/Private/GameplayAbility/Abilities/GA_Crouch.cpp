@@ -4,6 +4,7 @@
 #include "GameplayAbility/Abilities/GA_Crouch.h"
 
 #include "AbilitySystemComponent.h"
+#include "Movement/KernelCustomMovementMode.h"
 #include "Abilities/Tasks/AbilityTask_PlayMontageAndWait.h"
 #include "GameFramework/Character.h"
 #include "GameFramework/CharacterMovementComponent.h"
@@ -22,6 +23,13 @@ void UGA_Crouch::ActivateAbility(const FGameplayAbilitySpecHandle Handle, const 
 	
 	if (GetAbilitySystemComponentFromActorInfo()->HasMatchingGameplayTag(TAG_Status_Sprint))
 	{
+		if (ACharacter* Char = Cast<ACharacter>(GetAvatarActorFromActorInfo()))
+		{
+			Char->GetCharacterMovement()->SetMovementMode(MOVE_Custom, 1);
+			Char->SetIsCrouched(true);
+			UE_LOG(LogTemp,Log,TEXT("[GA_Crouch] Set to crouch"))
+		}
+		
 		if (MultiplySpeedEffectClass)
 		{
 			FGameplayEffectSpecHandle SpecHandle = MakeOutgoingGameplayEffectSpec(MultiplySpeedEffectClass);

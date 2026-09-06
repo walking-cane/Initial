@@ -40,6 +40,7 @@ void UKernelAnimInstance::NativeThreadSafeUpdateAnimation(float DeltaSeconds)
 			Direction = CalculateDirection(OwnerCharacter->GetVelocity(), CachedAimRotation);
 			bIsMoving = GroundSpeed > 0.0f;
 			bIsFalling = MovementComp->IsFalling();
+			bIsCrouching = OwnerCharacter->IsCrouched();
 		}
 	}
 	

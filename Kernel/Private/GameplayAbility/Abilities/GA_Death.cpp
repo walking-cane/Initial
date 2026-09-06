@@ -28,8 +28,6 @@ void UGA_Death::ActivateAbility(const FGameplayAbilitySpecHandle Handle, const F
 		if (UAbilityTask_PlayMontageAndWait* MontageTask = UAbilityTask_PlayMontageAndWait::CreatePlayMontageAndWaitProxy(
 			this, NAME_None, CosmeticTarget->GetDeathMontage()))
 		{
-			GetAbilitySystemComponentFromActorInfo()->AddLooseGameplayTag(TAG_Status_Death_Dying);
-			
 			MontageTask->OnCompleted.AddDynamic(this, &ThisClass::OnMontageEnded);
 			MontageTask->OnCancelled.AddDynamic(this, &ThisClass::OnMontageEnded);
 			MontageTask->OnInterrupted.AddDynamic(this, &ThisClass::OnMontageEnded);
