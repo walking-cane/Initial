@@ -2,6 +2,7 @@
 
 #include "CoreMinimal.h"
 #include "GameplayAbilitySpecHandle.h" // GrantedAbilityHandles를 위한 필수 헤더
+#include "GameplayAbility/AbilitySets/KernelAbilitySet.h"
 #include "KernelEquipmentInstance.generated.h"
 
 class UKernelItemInstance;
@@ -19,7 +20,7 @@ public:
 
 	// [누락되었던 핵심 변수] 부여된 어빌리티 핸들들을 추적하여 해제 시 사용합니다.
 	UPROPERTY()
-	TArray<FGameplayAbilitySpecHandle> GrantedAbilityHandles;
+	FKernelAbilitySet_GrantedHandles GrantedHandles;
 	
 	UPROPERTY(BlueprintReadWrite, Category = "Combat")
 	float LastFireTime = 0.0f;

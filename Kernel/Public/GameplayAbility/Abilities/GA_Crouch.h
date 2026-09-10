@@ -19,7 +19,8 @@ public:
 		const FGameplayAbilitySpecHandle Handle,
 		const FGameplayAbilityActorInfo* ActorInfo, 
 		const FGameplayAbilityActivationInfo ActivationInfo) override;
-	
+	void HandleSlideStateChanged(bool bIsSliding);
+
 protected:
 	virtual void ActivateAbility(
 		const FGameplayAbilitySpecHandle Handle, 
@@ -36,13 +37,8 @@ protected:
 	
 	UFUNCTION()
 	void OnMontageCancelled();
-	
-private:
-	UPROPERTY(EditDefaultsOnly)
-	TSubclassOf<UGameplayEffect> MultiplySpeedEffectClass;
-	
-	UPROPERTY(EditDefaultsOnly)
-	TSoftObjectPtr<UAnimMontage> SlideMontage;
 
+private:
 	FActiveGameplayEffectHandle SpeedHandle;
+	FDelegateHandle SlideStateHandle;
 };

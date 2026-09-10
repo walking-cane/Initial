@@ -6,6 +6,7 @@
 #include "Animation/AnimInstance.h"
 #include "KernelAnimInstance.generated.h"
 
+class UKernelCharacterMovementComponent;
 /**
  * 
  */
@@ -27,6 +28,7 @@ protected:
 	UPROPERTY(BlueprintReadOnly) bool bIsMoving;
 	UPROPERTY(BlueprintReadOnly) bool bIsFalling;
 	UPROPERTY(BlueprintReadOnly) bool bIsCrouching;
+	UPROPERTY(BlueprintReadOnly) bool bIsSliding;
 	UPROPERTY(BlueprintReadOnly) float AimYaw = 0.f;
 	UPROPERTY(BlueprintReadOnly) float AimPitch = 0.f;
 	UPROPERTY(BlueprintReadOnly) float AimOffsetAlpha = 0.f;
@@ -49,9 +51,10 @@ public:
 private:
 	UPROPERTY(Transient)
 	TObjectPtr<APawn> OwningPawn = nullptr;
+	UPROPERTY(Transient)
+	TObjectPtr<UKernelCharacterMovementComponent> KernelCMC = nullptr;
 	
 	FRotator CachedAimRotation   = FRotator::ZeroRotator;
 	FRotator CachedActorRotation = FRotator::ZeroRotator;
-
 	FRotator SmoothedAimDelta = FRotator::ZeroRotator;
 };

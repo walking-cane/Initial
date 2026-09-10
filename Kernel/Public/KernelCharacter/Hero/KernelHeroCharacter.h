@@ -32,6 +32,8 @@ public:
 	virtual void SetupPlayerInputComponent(UInputComponent* PlayerInputComponent) override;
 	virtual void BeginPlay() override;
 	
+	virtual void Tick(float DeltaSeconds) override;
+
 	virtual UAbilitySystemComponent* GetAbilitySystemComponent() const override;
 	
 	virtual USkeletalMeshComponent* GetMesh1P() override { return FirstPersonMesh1; }
@@ -44,7 +46,14 @@ public:
 	
 	void SetWeaponMesh(USkeletalMesh* NewWeaponMesh);
 	
+	void AddCameraHeightCompensation(float DeltaZ);
+	
 protected:
+	UPROPERTY(EditDefaultsOnly, Category = "Kernel|Camera")
+	float CrouchCameraInterpSpeed = 10.f;
+	
+	virtual bool CanJumpInternal_Implementation() const override;
+	
 	UPROPERTY(VisibleAnywhere) TObjectPtr<UKernelHeroComponent> HeroComp;
 	UPROPERTY(VisibleAnywhere) TObjectPtr<UKernelInteractionComponent> InteractionComp;
 	UPROPERTY(VisibleAnywhere) TObjectPtr<UKernelItemManager> ItemManagerComp;
@@ -64,4 +73,10 @@ protected:
 	
 public:
 	virtual void OnRep_PlayerState() override;
+	
+private:
+	void ApplyCameraOffset();
+
+	float DefaultCameraRelativeZ = 0.f;
+	float CrouchCameraOffsetZ = 0.f;
 };

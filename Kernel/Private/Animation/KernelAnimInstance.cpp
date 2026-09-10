@@ -4,23 +4,23 @@
 #include "Animation/KernelAnimInstance.h"
 #include "GameFramework/Character.h"
 #include "GameFramework/CharacterMovementComponent.h"
+#include "Movement/KernelCharacterMovementComponent.h"
 
 void UKernelAnimInstance::NativeInitializeAnimation()
 {
 	Super::NativeInitializeAnimation();
 	
 	OwningPawn = Cast<APawn>(TryGetPawnOwner());
+
+	if (ACharacter* Char = Cast<ACharacter>(OwningPawn))
+	{
+		KernelCMC = Cast<UKernelCharacterMovementComponent>(Char->GetCharacterMovement());
+	}
 }
 
 void UKernelAnimInstance::NativeUpdateAnimation(float DeltaSeconds)
 {
 	Super::NativeUpdateAnimation(DeltaSeconds);
-	
-	if (!OwningPawn)
-	{
-		OwningPawn = Cast<APawn>(TryGetPawnOwner());
-		if (!OwningPawn) return;
-	}
 
 	// GetControlRotation이 아니라 GetBaseAimRotation
 	CachedAimRotation   = OwningPawn->GetBaseAimRotation();
@@ -38,8 +38,9 @@ void UKernelAnimInstance::NativeThreadSafeUpdateAnimation(float DeltaSeconds)
 		{
 			GroundSpeed = OwnerCharacter->GetVelocity().Size2D();
 			Direction = CalculateDirection(OwnerCharacter->GetVelocity(), CachedAimRotation);
-			bIsMoving = GroundSpeed > 0.0f;
+			bIsMoving = GroundSpeed > 3.f;
 			bIsFalling = MovementComp->IsFalling();
+			bIsSliding = KernelCMC ? KernelCMC->IsCustomMovementMode(EKernelCustomMovementMode::Slide) : false;
 			bIsCrouching = OwnerCharacter->IsCrouched();
 		}
 	}

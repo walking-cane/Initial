@@ -67,7 +67,7 @@ void UKernelQuickBarComponent::EquipItemInSlot()
 					FGameplayEventData Payload;
 					Payload.OptionalObject = EquippedItem;
 					Payload.Instigator = GetOwner();
-					ASC->HandleGameplayEvent(FGameplayTag::RequestGameplayTag("Event.Weapon.Equip"), &Payload);
+					ASC->HandleGameplayEvent(FGameplayTag::RequestGameplayTag("GameplayEvent.Weapon.Equip"), &Payload);
 					
 					UE_LOG(LogTemp, Error, TEXT("[QuickBar] Equip Trigger"))
 				}

@@ -2,6 +2,8 @@
 
 
 #include "KernelCharacter/KernelCharacterBase.h"
+
+#include "GameFramework/CharacterMovementComponent.h"
 #include "KernelCharacter/KernelPawnExtensionComponent.h"
 #include "GameplayAbility/KernelAbilitySystemComponent.h"
 #include "GameplayAbility/AbilitySets/KernelAbilitySet.h"

@@ -7,6 +7,7 @@
 #include "AbilitySystemComponent.h"
 #include "Engine/World.h"
 #include "Cosmetics/KernelCosmeticComponent.h"
+#include "GameplayAbility/KernelAbilitySystemComponent.h"
 #include "Net/UnrealNetwork.h"
 
 void UKernelEquipmentInstance::GetLifetimeReplicatedProps(
@@ -19,52 +20,41 @@ void UKernelEquipmentInstance::GetLifetimeReplicatedProps(
 
 void UKernelEquipmentInstance::OnEquipped(AActor* Owner)
 {
-	if (!Owner) return;
+	if (!Owner || !Owner->HasAuthority()) return;
+	if (!InstigatorItem) return;
 
-	UWorld* World = Owner->GetWorld();
-	if (!World) return;
+	// [변경] AbilitySet이 UKernelAbilitySystemComponent*를 요구하므로 캐스팅
+	UKernelAbilitySystemComponent* KernelASC = Cast<UKernelAbilitySystemComponent>(
+		UAbilitySystemGlobals::GetAbilitySystemComponentFromActor(Owner));
+	if (!KernelASC) return;
 
-	if (Owner->HasAuthority())
+	const UKernelItemFragment_Equippable* EquipFrag =
+		InstigatorItem->FindFragmentByClass<UKernelItemFragment_Equippable>();
+	if (!EquipFrag) return;
+
+	if (EquipFrag->GrantAbilitySet)
 	{
-		if (UAbilitySystemComponent* ASC = UAbilitySystemGlobals::GetAbilitySystemComponentFromActor(Owner))
-		{
-			if (InstigatorItem)
-			{
-				const UKernelItemFragment_Equippable* EquipFrag = InstigatorItem->FindFragmentByClass<UKernelItemFragment_Equippable>();
-				
-				if (EquipFrag && EquipFrag->GrantAbilitySet)
-				{
-					EquipFrag->GrantAbilitySet->GiveToAbilitySystem(
-						ASC, 
-						&GrantedAbilityHandles, 
-						this);
-					
-					UE_LOG(LogTemp, Warning, TEXT("[Equip] GiveAbilitySet to %s (Item=%s)"),
-						*GetNameSafe(ASC->GetOwnerActor()), *GetNameSafe(InstigatorItem));
-				}
-			}
-		}
+		// 어빌리티 + GE가 여기서 한 번에 부여되고, 핸들도 GrantedHandles에 함께 쌓임
+		EquipFrag->GrantAbilitySet->GiveToAbilitySystem(KernelASC, &GrantedHandles, this);
+
+		UE_LOG(LogTemp, Warning, TEXT("[Equip] GiveAbilitySet to %s (Item=%s)"),
+			*GetNameSafe(KernelASC->GetOwnerActor()), *GetNameSafe(InstigatorItem));
 	}
+	// [삭제됨] GrantEquipEffect 별도 처리 블록 — GE는 AbilitySet의 GrantedEffects로 넣으면 됨
 }
 
 void UKernelEquipmentInstance::UnEquipped()
 {
-	// ItemManager가 이 객체의 Outer일 수 있으므로 최상단 Owner를 찾아야함
 	AActor* OwnerActor = GetTypedOuter<AActor>();
 
 	if (OwnerActor && OwnerActor->HasAuthority())
 	{
-		if (UAbilitySystemComponent* ASC = UAbilitySystemGlobals::GetAbilitySystemComponentFromActor(OwnerActor))
+		if (UKernelAbilitySystemComponent* KernelASC = Cast<UKernelAbilitySystemComponent>(
+			UAbilitySystemGlobals::GetAbilitySystemComponentFromActor(OwnerActor)))
 		{
-			for (const FGameplayAbilitySpecHandle& Handle : GrantedAbilityHandles)
-			{
-				if (Handle.IsValid())
-				{
-					ASC->ClearAbility(Handle);
-				}
-			}
+			// [변경] ClearAbility 수동 루프 → 어빌리티/GE/어트리뷰트셋 한 번에 반납
+			GrantedHandles.TakeFromAbilitySystem(KernelASC);
 		}
-		GrantedAbilityHandles.Empty();
 	}
 
 	if (OwnerActor)
@@ -74,6 +64,6 @@ void UKernelEquipmentInstance::UnEquipped()
 			Cosmetic->ChangeWeapon(nullptr);
 		}
 	}
-	
+
 	SpawnedEquippedActor = nullptr;
 }

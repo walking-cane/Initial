@@ -92,7 +92,7 @@ void UKernelHeroComponent::Input_SwapSlot(const FInputActionValue& InputActionVa
 		Payload.EventMagnitude = TargetSlotIndex; 
 		Payload.Instigator = AvatarPawn;
 
-		FGameplayTag EventTag = FGameplayTag::RequestGameplayTag("Event.Weapon.Swap");
+		FGameplayTag EventTag = FGameplayTag::RequestGameplayTag("GameplayEvent.Weapon.Swap");
 		
 		UAbilitySystemBlueprintLibrary::SendGameplayEventToActor(AvatarPawn, EventTag, Payload);
         

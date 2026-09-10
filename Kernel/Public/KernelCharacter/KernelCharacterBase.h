@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "GameplayTagContainer.h"
 #include "GameFramework/Character.h"
+#include "GameplayAbility/AbilitySets/KernelAbilitySet.h"
 #include "Interaction/KernelInteractionInterface.h"
 #include "KernelCharacterBase.generated.h"
 
@@ -39,7 +40,7 @@ protected:
 	UPROPERTY(EditDefaultsOnly) TObjectPtr<UKernelAbilitySet> AbilitySet;
 	UPROPERTY(EditDefaultsOnly) TObjectPtr<UAnimMontage> DeathMontage;
 	
-	UPROPERTY(Transient) TArray<FGameplayAbilitySpecHandle> GrantedAbilityHandles;
+	UPROPERTY(Transient) FKernelAbilitySet_GrantedHandles GrantedAbilityHandles;
 	
 	void GrantDefaultAbilities();
 };

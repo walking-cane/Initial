@@ -21,6 +21,8 @@
 AKernelHeroCharacter::AKernelHeroCharacter(const FObjectInitializer& ObjectInitializer)
 	:Super(ObjectInitializer.SetDefaultSubobjectClass<UKernelCharacterMovementComponent>(ACharacter::CharacterMovementComponentName))
 {
+	PrimaryActorTick.bCanEverTick = true;
+	
 	HeroComp = CreateDefaultSubobject<UKernelHeroComponent>("HeroComp");
 	InteractionComp = CreateDefaultSubobject<UKernelInteractionComponent>("InteractionComp");
 	ItemManagerComp = CreateDefaultSubobject<UKernelItemManager>("ItemManagerComp");
@@ -41,6 +43,9 @@ AKernelHeroCharacter::AKernelHeroCharacter(const FObjectInitializer& ObjectIniti
 	WeaponMeshComp3P = CreateDefaultSubobject<USkeletalMeshComponent>("WeaponMeshComp3P");
 	WeaponMeshComp3P->SetupAttachment(GetMesh());
 	WeaponMeshComp3P->SetOwnerNoSee(true);
+	
+	GetCharacterMovement()->GetNavAgentPropertiesRef().bCanCrouch = true;
+	GetCharacterMovement()->SetCrouchedHalfHeight(60.f);
 }
 
 void AKernelHeroCharacter::PossessedBy(AController* NewController)
@@ -99,6 +104,8 @@ void AKernelHeroCharacter::BeginPlay()
 			FName("WeaponSocket"));
 		WeaponMeshComp3P->bOwnerNoSee = true;
 	}
+	
+	DefaultCameraRelativeZ = FirstPersonCamera1->GetRelativeLocation().Z;
 }
 
 UAbilitySystemComponent* AKernelHeroCharacter::GetAbilitySystemComponent() const
@@ -114,6 +121,41 @@ void AKernelHeroCharacter::SetWeaponMesh(USkeletalMesh* NewWeaponMesh)
 {
 	WeaponMeshComp1P->SetSkeletalMesh(NewWeaponMesh);
 	WeaponMeshComp3P->SetSkeletalMesh(NewWeaponMesh);
+}
+
+void AKernelHeroCharacter::Tick(float DeltaSeconds)
+{
+	Super::Tick(DeltaSeconds);
+	
+	if (!FMath::IsNearlyZero(CrouchCameraOffsetZ, 0.01f))
+	{
+		CrouchCameraOffsetZ = FMath::FInterpTo(CrouchCameraOffsetZ, 0.f, DeltaSeconds, CrouchCameraInterpSpeed);
+		ApplyCameraOffset();
+	}
+}
+
+void AKernelHeroCharacter::AddCameraHeightCompensation(float DeltaZ)
+{
+	CrouchCameraOffsetZ += DeltaZ;
+	ApplyCameraOffset();
+}
+
+void AKernelHeroCharacter::ApplyCameraOffset()
+{
+	if (!FirstPersonCamera1) return;
+
+	const float MaxOffset = FMath::Abs(
+		GetDefaultHalfHeight() - GetCharacterMovement()->GetCrouchedHalfHeight());
+	CrouchCameraOffsetZ = FMath::Clamp(CrouchCameraOffsetZ, -MaxOffset, MaxOffset);
+
+	FVector Loc = FirstPersonCamera1->GetRelativeLocation();
+	Loc.Z = DefaultCameraRelativeZ + CrouchCameraOffsetZ;
+	FirstPersonCamera1->SetRelativeLocation(Loc);
+}
+
+bool AKernelHeroCharacter::CanJumpInternal_Implementation() const
+{
+	return JumpIsAllowedInternal();
 }
 
 void AKernelHeroCharacter::OnDeath1P(UAnimMontage* DeathMontage1P)
