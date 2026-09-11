@@ -132,6 +132,14 @@ void UGA_Fire_Melee::OnComboWindow(FGameplayEventData Payload)
 
 void UGA_Fire_Melee::OnMontageCompleted()
 {
+	ComboIndex = 0;
+	
+	if (IsInputHeld())
+	{
+		Fire();
+		return;
+	}
+	
 	UE_LOG(LogTemp,Warning,TEXT("MontageEnd"))
 	EndAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, true, false);
 }
@@ -162,7 +170,10 @@ void UGA_Fire_Melee::OnMeleeHit(FGameplayEventData Payload)
 	Params.AddIgnoredActor(OwnerActor);
 	
 	FVector StartLoc = OwnerActor->GetActorLocation() + FVector(0.f, 0.f, 40.f);
-	FVector EndLoc = StartLoc + OwnerActor->GetActorForwardVector() * TraceDistance;
+	FVector ViewLoc; FRotator ViewRot;
+	OwnerActor->GetActorEyesViewPoint(ViewLoc, ViewRot);
+	
+	FVector EndLoc = StartLoc + ViewRot.Vector() * TraceDistance;
 	
 	bool bHit = GetWorld()->SweepMultiByChannel(
 		HitResults, StartLoc, EndLoc, FQuat::Identity, ECC_Pawn,

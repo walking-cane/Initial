@@ -1,7 +1,7 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 
-#include "GameplayAbility/Abilities/AIGA_AttackBase.h"
+#include "GameplayAbility/Abilities/AIGA_Attack_MeleeBase.h"
 #include "AbilitySystemBlueprintLibrary.h"
 #include "DrawDebugHelpers.h"
 #include "GameplayAbility/KernelGameplayTags.h"
@@ -9,7 +9,7 @@
 #include "Abilities/Tasks/AbilityTask_WaitGameplayEvent.h"
 #include "Engine/OverlapResult.h"
 
-void UAIGA_AttackBase::ActivateAbility(const FGameplayAbilitySpecHandle Handle,
+void UAIGA_Attack_MeleeBase::ActivateAbility(const FGameplayAbilitySpecHandle Handle,
                                      const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo,
                                      const FGameplayEventData* TriggerEventData)
 {
@@ -52,19 +52,19 @@ void UAIGA_AttackBase::ActivateAbility(const FGameplayAbilitySpecHandle Handle,
 	EndAbility(Handle, ActorInfo, ActivationInfo, true, true);
 }
 
-void UAIGA_AttackBase::OnMontageCompleted()
+void UAIGA_Attack_MeleeBase::OnMontageCompleted()
 {
 	UE_LOG(LogTemp, Warning, TEXT("[GA_AttackBase] Montage Completed"));
 	EndAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, true, false);
 }
 
-void UAIGA_AttackBase::OnMontageCancelled()
+void UAIGA_Attack_MeleeBase::OnMontageCancelled()
 {
 	UE_LOG(LogTemp, Warning, TEXT("[GA_AttackBase] Montage Cancelled"));
 	EndAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, true, true);
 }
 
-void UAIGA_AttackBase::OnHitEventReceived(FGameplayEventData Payload)
+void UAIGA_Attack_MeleeBase::OnHitEventReceived(FGameplayEventData Payload)
 {
 	if (!HasAuthorityOrPredictionKey(CurrentActorInfo, &CurrentActivationInfo)) return;
 	AActor* Avatar = GetAvatarActorFromActorInfo();

@@ -5,6 +5,7 @@
 #include "NativeGameplayTags.h"
 #include "BehaviorTree/BlackboardComponent.h"
 #include "KernelCharacter/Enemy/KernelEnemyStateComponent.h"
+#include "Navigation/PathFollowingComponent.h"
 #include "Perception/AIPerceptionComponent.h"
 #include "Perception/AIPerceptionTypes.h"
 #include "Perception/AISenseConfig_Sight.h"
@@ -36,6 +37,11 @@ void AKernelAIController::BeginPlay()
 	if (AIPerceptionComp)
 	{
 		AIPerceptionComp->OnTargetPerceptionUpdated.AddDynamic(this, &ThisClass::OnTargetPerceptionUpdated);
+	}
+	
+	if (UPathFollowingComponent* PFC = GetPathFollowingComponent())
+	{
+		PFC->SetStopMovementOnFinish(false);
 	}
 }
 

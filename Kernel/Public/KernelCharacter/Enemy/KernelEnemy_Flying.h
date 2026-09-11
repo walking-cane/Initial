@@ -15,6 +15,8 @@ class KERNEL_API AKernelEnemy_Flying : public AKernelEnemyCharacter
 	GENERATED_BODY()
 	
 public:
+	AKernelEnemy_Flying(const FObjectInitializer& ObjectInitializer);
+	
 	virtual void BeginPlay() override;
 	virtual void Tick(float DeltaSeconds) override;
 	

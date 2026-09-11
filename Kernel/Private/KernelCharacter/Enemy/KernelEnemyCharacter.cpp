@@ -24,6 +24,8 @@
 AKernelEnemyCharacter::AKernelEnemyCharacter(const FObjectInitializer& ObjectInitializer)
 	:Super(ObjectInitializer)
 {
+	PrimaryActorTick.bCanEverTick = false;
+	
 	KernelASC = CreateDefaultSubobject<UKernelAbilitySystemComponent>("ASC");
 	CombatSet = CreateDefaultSubobject<UKernelCombatAttributeSet>(TEXT("CombatSet"));
 	HealthSet = CreateDefaultSubobject<UKernelHealthAttributeSet>(TEXT("HealthSet"));

@@ -3,19 +3,15 @@
 
 #include "KernelCharacter/Enemy/KernelEnemy_Flying.h"
 
-#include "GameFramework/CharacterMovementComponent.h"
+AKernelEnemy_Flying::AKernelEnemy_Flying(const FObjectInitializer& ObjectInitializer)
+	:Super(ObjectInitializer)
+{
+	PrimaryActorTick.bCanEverTick = true;
+}
 
 void AKernelEnemy_Flying::BeginPlay()
 {
 	Super::BeginPlay();
-	
-	if (UCharacterMovementComponent* CMC = GetCharacterMovement())
-	{
-		CMC->SetMovementMode(MOVE_Flying);
-		CMC->bOrientRotationToMovement = true;
-		CMC->MaxFlySpeed = 500.f;
-		CMC->BrakingDecelerationFlying = 1000.f;
-	}
 }
 
 void AKernelEnemy_Flying::Tick(float DeltaSeconds)

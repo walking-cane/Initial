@@ -12,7 +12,6 @@
 // Sets default values
 AKernelCharacterBase::AKernelCharacterBase(const FObjectInitializer& ObjectInitializer)
 {
-	PrimaryActorTick.bCanEverTick = false;
 	KernelPawnExtComp = CreateDefaultSubobject<UKernelPawnExtensionComponent>("PawnExtensionComponent");
 	HealthComp = CreateDefaultSubobject<UKernelHealthComponent>("HealthComp");
 }

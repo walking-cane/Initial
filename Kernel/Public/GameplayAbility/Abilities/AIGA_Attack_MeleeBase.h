@@ -4,10 +4,10 @@
 
 #include "CoreMinimal.h"
 #include "Abilities/GameplayAbility.h"
-#include "AIGA_AttackBase.generated.h"
+#include "AIGA_Attack_MeleeBase.generated.h"
 
 UCLASS()
-class KERNEL_API UAIGA_AttackBase : public UGameplayAbility
+class KERNEL_API UAIGA_Attack_MeleeBase : public UGameplayAbility
 {
 	GENERATED_BODY()
 	
