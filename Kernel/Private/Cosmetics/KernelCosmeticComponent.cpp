@@ -164,7 +164,7 @@ AActor* UKernelCosmeticComponent::SpawnAndAttachWeapon(
 		SocketName);
 
 	// 소켓에 스냅한 뒤 데이터에 정의된 보정을 얹는다.
-	NewActor->SetActorRelativeTransform(Entry.AttachTransform);
+	NewActor->SetActorRelativeTransform(bOnlyOwnerSee ? Entry.AttachTransform1P : Entry.AttachTransform3P);
 	
 	TArray<UPrimitiveComponent*> Primitives;
 	NewActor->GetComponents<UPrimitiveComponent>(Primitives);

@@ -22,7 +22,7 @@ void UAIGA_Attack_MeleeBase::ActivateAbility(const FGameplayAbilitySpecHandle Ha
 		return;
 	}
 	
-	if (TriggerEventData && TriggerEventData->Target != nullptr)
+	if (TriggerEventData && TriggerEventData->Target != nullptr && AttackMontage)
 	{
 		UAbilityTask_PlayMontageAndWait* MontageTask = UAbilityTask_PlayMontageAndWait::CreatePlayMontageAndWaitProxy(
 			this, NAME_None,AttackMontage);

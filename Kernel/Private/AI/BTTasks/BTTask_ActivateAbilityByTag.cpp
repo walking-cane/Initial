@@ -61,21 +61,41 @@ EBTNodeResult::Type UBTTask_ActivateAbilityByTag::ExecuteTask(
 {
 	UBlackboardComponent* BB = OwnerComp.GetBlackboardComponent();
 	AAIController* AICon = OwnerComp.GetAIOwner();
-	if (!BB || !AICon) return EBTNodeResult::Failed;
+	if (!BB || !AICon)
+	{
+		UE_LOG(LogTemp, Error, TEXT("[ActiveTag] BB AICon is NULL"))
+		return EBTNodeResult::Failed;
+	}
 
 	APawn* AIPawn = AICon->GetPawn();
-	if (!AIPawn) return EBTNodeResult::Failed;
+	if (!AIPawn) 
+	{
+		UE_LOG(LogTemp, Error, TEXT("[ActiveTag] AIPawn is NULL"))
+		return EBTNodeResult::Failed;
+	}
 
 	AActor* TargetActor = Cast<AActor>(BB->GetValueAsObject(TargetKey.SelectedKeyName));
-	if (!TargetActor) return EBTNodeResult::Failed;
+	if (!TargetActor) 
+	{
+		UE_LOG(LogTemp, Error, TEXT("[ActiveTag] TargetActor is NULL"))
+		return EBTNodeResult::Failed;
+	}
 
 	UAbilitySystemComponent* ASC =
 		UAbilitySystemGlobals::GetAbilitySystemComponentFromActor(AIPawn);
-	if (!ASC) return EBTNodeResult::Failed;
+	if (!ASC)
+	{
+		UE_LOG(LogTemp, Error, TEXT("[ActiveTag] ASC is NULL"))
+		return EBTNodeResult::Failed;
+	}
 
 	FGameplayTag ActivateTag;
 	FGameplayTag CompleteTag;
-	if (!ResolveTags(BB, ActivateTag, CompleteTag)) return EBTNodeResult::Failed;
+	if (!ResolveTags(BB, ActivateTag, CompleteTag)) 
+	{
+		UE_LOG(LogTemp, Error, TEXT("[ActiveTag] Cant Resolve Tags!"))
+		return EBTNodeResult::Failed;
+	}
 
 	FGameplayEventData Payload;
 	Payload.Instigator = AIPawn;
@@ -85,7 +105,14 @@ EBTNodeResult::Type UBTTask_ActivateAbilityByTag::ExecuteTask(
 	if (!CompleteTag.IsValid())
 	{
 		const int32 Fired = ASC->HandleGameplayEvent(ActivateTag, &Payload);
-		return Fired > 0 ? EBTNodeResult::Succeeded : EBTNodeResult::Failed;
+		
+		if (Fired > 0)
+		{
+			return EBTNodeResult::Succeeded;
+		}
+	
+		UE_LOG(LogTemp, Log, TEXT("[ActiveTag] Failed!!"))
+		return EBTNodeResult::Failed;
 	}
 
 	CachedOwnerComp   = &OwnerComp;
@@ -103,6 +130,7 @@ EBTNodeResult::Type UBTTask_ActivateAbilityByTag::ExecuteTask(
 	if (Triggered <= 0)
 	{
 		Cleanup();
+		UE_LOG(LogTemp, Error, TEXT("[ActiveTag] Cant Activate Task"))
 		return EBTNodeResult::Failed;
 	}
 

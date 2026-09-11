@@ -23,7 +23,7 @@ struct FKernelAbilitySet_GameplayAbility
 	UPROPERTY(EditDefaultsOnly, Category = "Ability")
 	int32 AbilityLevel = 1;
 
-	UPROPERTY(EditDefaultsOnly, Category = "Ability", Meta = (Categories = "InputTag"))
+	UPROPERTY(EditDefaultsOnly, Category = "Ability")
 	FGameplayTag InputTag;
 };
 

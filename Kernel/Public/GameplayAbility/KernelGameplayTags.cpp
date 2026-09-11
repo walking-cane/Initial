@@ -2,6 +2,8 @@
 
 UE_DEFINE_GAMEPLAY_TAG_STATIC(TAG_AI_DetectTarget,      "GameplayEvent.AI.DetectTarget");
 
+UE_DEFINE_GAMEPLAY_TAG(TAG_AI_FireProjectile,      "GameplayEvent.AI.FireProjectile");
+
 UE_DEFINE_GAMEPLAY_TAG(TAG_Gameplay_Damage,             "SetByCaller.Damage");
 UE_DEFINE_GAMEPLAY_TAG(TAG_Gameplay_DamageImmunity,     "Status.Immunity.Damage");
 UE_DEFINE_GAMEPLAY_TAG(TAG_Gameplay_DamageSelfDestruct, "Gameplay.DamageSelfDestruct");

@@ -7,6 +7,9 @@ AKernelEnemy_Flying::AKernelEnemy_Flying(const FObjectInitializer& ObjectInitial
 	:Super(ObjectInitializer)
 {
 	PrimaryActorTick.bCanEverTick = true;
+	
+	// 활성화 해야 투사체 발사 몽타주가 거리가 멀어도 재생됨.
+	GetMesh()->VisibilityBasedAnimTickOption = EVisibilityBasedAnimTickOption::AlwaysTickPose;
 }
 
 void AKernelEnemy_Flying::BeginPlay()

@@ -28,7 +28,10 @@ struct KERNEL_API FKernelWeaponAttachRule
 
 	/** 소켓 기준 추가 보정. AI 생성 메시의 피벗/축 어긋남을 여기서 잡는다. */
 	UPROPERTY(EditDefaultsOnly, Category = "AttachRule")
-	FTransform AttachTransform = FTransform::Identity;
+	FTransform AttachTransform1P = FTransform::Identity;
+	
+	UPROPERTY(EditDefaultsOnly, Category = "AttachRule")
+	FTransform AttachTransform3P = FTransform::Identity;
 };
 
 UCLASS()

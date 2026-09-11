@@ -16,6 +16,7 @@
 #include "KernelCharacter/Hero/KernelHeroWeaponComponent.h"
 #include "Cosmetics/KernelCosmeticInterface.h"
 #include "GameplayAbility/KernelGameplayTags.h"
+#include "Item/KernelItemFragment_Cosmetic.h"
 
 UGA_FireBase::UGA_FireBase()
 {
@@ -160,7 +161,8 @@ void UGA_FireBase::InitializeWeapon()
 	const UKernelItemFragment_Combat* StatFrag = ItemInst->FindFragmentByClass<UKernelItemFragment_Combat>();
 	const UKernelItemFragment_Weapon* WeaponFrag = ItemInst->FindFragmentByClass<UKernelItemFragment_Weapon>();
 	const UKernelItemFragment_Recoil* RecoilFrag = ItemInst->FindFragmentByClass<UKernelItemFragment_Recoil>();
-
+	const UKernelItemFragment_Cosmetic* CosmeticFrag = ItemInst->FindFragmentByClass<UKernelItemFragment_Cosmetic>();
+	
 	if (StatFrag)
 	{
 		FireDelay = StatFrag->FireDelay;
@@ -178,6 +180,11 @@ void UGA_FireBase::InitializeWeapon()
 		RecoilCurve = RecoilFrag->RecoilCurve;
 		CachedRecoilKick = RecoilFrag->KickAmount;
 		CachedMaxRecoilKick = RecoilFrag->MaxKickAmount;
+	}
+	
+	if (CosmeticFrag)
+	{
+		// TODO : Initialize WeaponMesh
 	}
 }
 

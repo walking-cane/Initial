@@ -107,6 +107,7 @@ void AKernelProjectileBase::OnProjectileHit(UPrimitiveComponent*, AActor* OtherA
 
 void AKernelProjectileBase::HandleHit(const FHitResult& Hit)
 {
+	UE_LOG(LogTemp, Warning, TEXT("HandleHit"))
 	if (DamageSpec.IsValid())
 	{
 		DamageSpec.Data->GetContext().AddHitResult(Hit);

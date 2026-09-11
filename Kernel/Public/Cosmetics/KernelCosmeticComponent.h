@@ -28,7 +28,10 @@ struct FKernelWeaponAttachEntry
 	FName AttachSocket3P = NAME_None;
 
 	UPROPERTY()
-	FTransform AttachTransform = FTransform::Identity;
+	FTransform AttachTransform1P = FTransform::Identity;
+	
+	UPROPERTY()
+	FTransform AttachTransform3P = FTransform::Identity;
 };
 
 UCLASS(ClassGroup = (Kernel), meta = (BlueprintSpawnableComponent))

@@ -25,6 +25,8 @@
 		false, 
 		0.f);
   	
+  	/** TODO : Move to AttributSet. ExecCalc must have only Calculate. */
+  	
   	if (TargetTags.HasTag(TAG_Status_Parrying))
   	{
   		UE_LOG(LogTemp,Warning,TEXT("ExecCalc :: Parry Succeeded!"))
@@ -45,7 +47,7 @@
   	// Damage Calculate logic.
 	if (BaseDamage > 0.f)
 	{
-		BaseDamage = FMath::RoundToInt(FMath::RandRange(BaseDamage, BaseDamage *= 0.05f));
+		BaseDamage = FMath::RoundToInt(FMath::RandRange(BaseDamage, BaseDamage + BaseDamage * 0.05f));
 		
 		OutExecutionOutput.AddOutputModifier(FGameplayModifierEvaluatedData(
 			UKernelHealthAttributeSet::GetDamageAttribute(), EGameplayModOp::Additive, BaseDamage));

@@ -85,7 +85,8 @@ void UGA_EquipWeapon::ActivateAbility(const FGameplayAbilitySpecHandle Handle,
 		Entry.WeaponActorClass = LoadedClass;
 		Entry.AttachSocket1P = Rule.AttachSocket1P;
 		Entry.AttachSocket3P = Rule.AttachSocket3P;
-		Entry.AttachTransform = Rule.AttachTransform;
+		Entry.AttachTransform1P = Rule.AttachTransform1P;
+		Entry.AttachTransform3P = Rule.AttachTransform3P;
 	}
 
 	// 빈 배열이어도 호출한다. 이전 무기를 정리하는 경로이기도 하다.
