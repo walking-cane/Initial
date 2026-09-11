@@ -1,7 +1,9 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
-
 #include "Cosmetics/KernelCosmeticComponent.h"
+#include "Components/PrimitiveComponent.h"
+#include "Components/SkeletalMeshComponent.h"
+#include "Engine/World.h"
 #include "GameFramework/Character.h"
 #include "Net/UnrealNetwork.h"
 
@@ -11,50 +13,213 @@ UKernelCosmeticComponent::UKernelCosmeticComponent()
 	SetIsReplicatedByDefault(true);
 }
 
-void UKernelCosmeticComponent::GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const
+void UKernelCosmeticComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
-	
+
+	DOREPLIFETIME(UKernelCosmeticComponent, WeaponAttachEntries);
 	DOREPLIFETIME(UKernelCosmeticComponent, CurrentLayer1P);
 	DOREPLIFETIME(UKernelCosmeticComponent, CurrentLayer3P);
-	DOREPLIFETIME(UKernelCosmeticComponent, CurrentWeaponMesh);
 	DOREPLIFETIME(UKernelCosmeticComponent, EquipMontage);
 	DOREPLIFETIME(UKernelCosmeticComponent, EquipMontageCounter);
 }
 
+void UKernelCosmeticComponent::EndPlay(const EEndPlayReason::Type EndPlayReason)
+{
+	DestroySpawnedWeaponActors();
+	Super::EndPlay(EndPlayReason);
+}
+
+// ---------------------------------------------------------------------------
+// 무기 부착
+// ---------------------------------------------------------------------------
+
+void UKernelCosmeticComponent::SetWeaponAttachEntries(const TArray<FKernelWeaponAttachEntry>& NewEntries)
+{
+	if (!GetOwner() || !GetOwner()->HasAuthority())
+	{
+		return;
+	}
+
+	WeaponAttachEntries = NewEntries;
+
+	// 서버(리슨 호스트) 본인도 동일 경로를 타야 하므로 직접 호출한다.
+	OnRep_WeaponAttachEntries();
+}
+
+void UKernelCosmeticComponent::ClearWeaponAttachEntries()
+{
+	SetWeaponAttachEntries(TArray<FKernelWeaponAttachEntry>());
+}
+
+void UKernelCosmeticComponent::OnRep_WeaponAttachEntries()
+{
+	// 배열이 통째로 갈리므로, 이전 무기를 먼저 지우고 새로 만든다.
+	DestroySpawnedWeaponActors();
+	SpawnWeaponActors();
+}
+
+void UKernelCosmeticComponent::DestroySpawnedWeaponActors()
+{
+	for (AActor* Actor : SpawnedWeaponActors)
+	{
+		if (IsValid(Actor))
+		{
+			Actor->Destroy();
+		}
+	}
+	SpawnedWeaponActors.Reset();
+}
+
+void UKernelCosmeticComponent::SpawnWeaponActors()
+{
+	if (WeaponAttachEntries.Num() == 0)
+	{
+		return;
+	}
+
+	IKernelCosmeticInterface* CosmeticTarget = Cast<IKernelCosmeticInterface>(GetOwner());
+	if (!CosmeticTarget)
+	{
+		return;
+	}
+
+	ACharacter* Character = GetOwner<ACharacter>();
+	const bool bLocallyControlled = Character && Character->IsLocallyControlled();
+
+	USkeletalMeshComponent* Mesh1P = CosmeticTarget->GetMesh1P();
+	USkeletalMeshComponent* Mesh3P = Character ? Character->GetMesh() : nullptr;
+
+	for (const FKernelWeaponAttachEntry& Entry : WeaponAttachEntries)
+	{
+		if (!Entry.WeaponActorClass)
+		{
+			continue;
+		}
+
+		// 1P는 이 폰을 직접 조종하는 머신에서만 필요하다.
+		if (bLocallyControlled && Mesh1P)
+		{
+			if (AActor* Spawned = SpawnAndAttachWeapon(
+				Entry, Mesh1P, Entry.AttachSocket1P,
+				/*bOnlyOwnerSee=*/true, /*bOwnerNoSee=*/false))
+			{
+				SpawnedWeaponActors.Add(Spawned);
+			}
+		}
+
+		// 3P는 모든 머신에서 만든다. 소유자 화면에서는 그림자만 남는다.
+		if (Mesh3P)
+		{
+			if (AActor* Spawned = SpawnAndAttachWeapon(
+				Entry, Mesh3P, Entry.AttachSocket3P,
+				/*bOnlyOwnerSee=*/false, /*bOwnerNoSee=*/true))
+			{
+				SpawnedWeaponActors.Add(Spawned);
+			}
+		}
+	}
+}
+
+AActor* UKernelCosmeticComponent::SpawnAndAttachWeapon(
+	const FKernelWeaponAttachEntry& Entry,
+	USkeletalMeshComponent* AttachTarget,
+	FName SocketName,
+	bool bOnlyOwnerSee,
+	bool bOwnerNoSee)
+{
+	UWorld* World = GetWorld();
+	if (!World || !AttachTarget || !Entry.WeaponActorClass)
+	{
+		return nullptr;
+	}
+	
+	if (SocketName != NAME_None && !AttachTarget->DoesSocketExist(SocketName))
+	{
+		UE_LOG(LogTemp, Error,
+			TEXT("[Cosmetic] Socket '%s' not found on %s. Weapon would attach to component root."),
+			*SocketName.ToString(), *GetNameSafe(AttachTarget));
+		return nullptr;
+	}
+
+	APawn* OwnerPawn = Cast<APawn>(GetOwner());
+
+	AActor* NewActor = World->SpawnActorDeferred<AActor>(
+		Entry.WeaponActorClass,
+		FTransform::Identity,
+		GetOwner(),
+		OwnerPawn,
+		ESpawnActorCollisionHandlingMethod::AlwaysSpawn);
+
+	if (!NewActor)
+	{
+		return nullptr;
+	}
+
+	NewActor->FinishSpawning(FTransform::Identity, /*bIsDefaultTransform=*/true);
+
+	NewActor->AttachToComponent(
+		AttachTarget,
+		FAttachmentTransformRules::SnapToTargetNotIncludingScale,
+		SocketName);
+
+	// 소켓에 스냅한 뒤 데이터에 정의된 보정을 얹는다.
+	NewActor->SetActorRelativeTransform(Entry.AttachTransform);
+	
+	TArray<UPrimitiveComponent*> Primitives;
+	NewActor->GetComponents<UPrimitiveComponent>(Primitives);
+	for (UPrimitiveComponent* Primitive : Primitives)
+	{
+		Primitive->SetOnlyOwnerSee(bOnlyOwnerSee);
+		Primitive->SetOwnerNoSee(bOwnerNoSee);
+		// 1P 무기는 그림자를 끄고, 그림자는 3P 쪽이 담당한다.
+		Primitive->SetCastShadow(!bOnlyOwnerSee);
+	}
+
+	return NewActor;
+}
+
+// ---------------------------------------------------------------------------
+// 애님 레이어 / 몽타주
+// ---------------------------------------------------------------------------
+
 void UKernelCosmeticComponent::ApplyWeaponLayer(TSubclassOf<UAnimInstance> Layer1P, TSubclassOf<UAnimInstance> Layer3P)
 {
-	if (!GetOwner()->HasAuthority()) return;
-	
+	if (!GetOwner() || !GetOwner()->HasAuthority())
+	{
+		return;
+	}
+
 	CurrentLayer1P = Layer1P;
 	CurrentLayer3P = Layer3P;
-	
+
 	OnRep_WeaponLayers();
 }
 
 void UKernelCosmeticComponent::OnRep_WeaponLayers()
 {
-	if (CurrentLayer1P)
+	IKernelCosmeticInterface* CosmeticTarget = Cast<IKernelCosmeticInterface>(GetOwner());
+
+	if (CosmeticTarget)
 	{
-		if (IKernelCosmeticInterface* CosmeticTarget = Cast<IKernelCosmeticInterface>(GetOwner()))
+		if (USkeletalMeshComponent* Mesh1P = CosmeticTarget->GetMesh1P())
 		{
-			if (USkeletalMeshComponent* Mesh1P = CosmeticTarget->GetMesh1P())
+			Mesh1P->UnlinkAnimClassLayers(nullptr);
+			if (CurrentLayer1P)
 			{
-				Mesh1P->UnlinkAnimClassLayers(nullptr);
 				Mesh1P->LinkAnimClassLayers(CurrentLayer1P);
 			}
 		}
 	}
-	
-	if (CurrentLayer3P)
+
+	if (ACharacter* Character = GetOwner<ACharacter>())
 	{
-		if (ACharacter* Character = GetOwner<ACharacter>())
+		if (USkeletalMeshComponent* Mesh3P = Character->GetMesh())
 		{
-			if (USkeletalMeshComponent* Mesh3P = Character->GetMesh())
+			Mesh3P->UnlinkAnimClassLayers(nullptr);
+			if (CurrentLayer3P)
 			{
-				Mesh3P->UnlinkAnimClassLayers(nullptr);
 				Mesh3P->LinkAnimClassLayers(CurrentLayer3P);
-				UE_LOG(LogTemp,Warning,TEXT("3PLayerApplied"))
 			}
 		}
 	}
@@ -62,52 +227,31 @@ void UKernelCosmeticComponent::OnRep_WeaponLayers()
 
 void UKernelCosmeticComponent::PlayEquipMontage(UAnimMontage* Montage)
 {
-	if (!GetOwner()->HasAuthority() || !Montage) return;
+	if (!GetOwner() || !GetOwner()->HasAuthority() || !Montage)
+	{
+		return;
+	}
 
 	EquipMontage = Montage;
-	++EquipMontageCounter; // 값을 바꿔 OnRep 강제 트리거
-	OnRep_EquipMontage();  // 서버(호스트) 본인도 재생
-}
-
-void UKernelCosmeticComponent::ChangeWeapon(USkeletalMesh* NewWeaponMesh)
-{
-	if (!GetOwner()->HasAuthority()) return;
-	UE_LOG(LogTemp, Warning, TEXT("[Cosmetic] ChangeWeapon on SERVER: %s"), *GetNameSafe(NewWeaponMesh));
-	
-	CurrentWeaponMesh = NewWeaponMesh;
-
-	OnRep_WeaponMesh(); // 서버 자신의 화면에도 즉시 반영
-}
-
-void UKernelCosmeticComponent::OnRep_WeaponMesh()
-{
-	UE_LOG(LogTemp, Warning, TEXT("[Cosmetic] OnRep_WeaponMesh (Authority=%d): %s"),
-		GetOwner()->HasAuthority(), *GetNameSafe(CurrentWeaponMesh));
-	
-	if (IKernelCosmeticInterface* CosmeticTarget = Cast<IKernelCosmeticInterface>(GetOwner()))
-	{
-		if (USkeletalMeshComponent* WeaponMesh1P = CosmeticTarget->GetWeaponMesh1P())
-		{
-			WeaponMesh1P->SetSkeletalMesh(CurrentWeaponMesh);
-		}
-
-		if (USkeletalMeshComponent* WeaponMesh3P = CosmeticTarget->GetWeaponMesh3P())
-		{
-			WeaponMesh3P->SetSkeletalMesh(CurrentWeaponMesh);
-		}
-	}
+	++EquipMontageCounter; // 같은 무기를 연속 장착해도 OnRep 이 뜨도록
+	OnRep_EquipMontage();
 }
 
 void UKernelCosmeticComponent::OnRep_EquipMontage()
 {
-	if (!EquipMontage) return;
+	if (!EquipMontage)
+	{
+		return;
+	}
 
 	IKernelCosmeticInterface* CosmeticTarget = Cast<IKernelCosmeticInterface>(GetOwner());
-	if (!CosmeticTarget) return;
+	if (!CosmeticTarget)
+	{
+		return;
+	}
 
 	ACharacter* Character = GetOwner<ACharacter>();
-	
-	// 1P: 이 폰을 로컬로 조종하는 클라이언트에서만 (본인 시점 팔)
+
 	if (Character && Character->IsLocallyControlled())
 	{
 		if (USkeletalMeshComponent* Mesh1P = CosmeticTarget->GetMesh1P())
@@ -119,7 +263,6 @@ void UKernelCosmeticComponent::OnRep_EquipMontage()
 		}
 	}
 
-	// 3P: 모든 곳에서 (남들이 보는 몸체). 단, 1P만 보이는 소유자 본인 화면에선 3P가 어차피 안 보이므로 재생해도 무해.
 	if (USkeletalMeshComponent* Mesh3P = Character ? Character->GetMesh() : nullptr)
 	{
 		if (UAnimInstance* Anim3P = Mesh3P->GetAnimInstance())

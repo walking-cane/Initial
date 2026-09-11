@@ -18,8 +18,7 @@ class KERNEL_API IKernelCosmeticInterface
 
 public:
 	virtual USkeletalMeshComponent* GetMesh1P() { return nullptr; }
-	virtual USkeletalMeshComponent* GetWeaponMesh1P() { return nullptr; }
-	virtual USkeletalMeshComponent* GetWeaponMesh3P() { return nullptr; }
+	virtual USkeletalMeshComponent* GetMesh3P() { return nullptr; }
 	virtual UAnimMontage* GetDeathMontage() { return nullptr; };
 	virtual void OnDeath1P(UAnimMontage* DeathMontage) { return; };
 };

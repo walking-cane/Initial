@@ -25,10 +25,10 @@ public:
 	virtual bool IsMovingOnGround() const override;
 	virtual bool CanAttemptJump() const override;
 	virtual bool CanCrouchInCurrentState() const override;
-
-	
 	virtual float GetMaxBrakingDeceleration() const override;
 	
+	virtual void Crouch(bool bClientSimulation = false) override;
+	virtual void UnCrouch(bool bClientSimulation = false) override;
 	
 	bool IsCustomMovementMode(EKernelCustomMovementMode CustomMode) const
 	{
@@ -49,9 +49,6 @@ protected:
 	void PhysSlide(float deltaTime, int32 Iterations);
 
 	bool CanStartSlideOnLanded() const;
-	
-	virtual void Crouch(bool bClientSimulation = false) override;
-	virtual void UnCrouch(bool bClientSimulation = false) override;
 	
 	//Slide & SlideJump
 	UPROPERTY(EditDefaultsOnly, Category = "Slide") 
@@ -78,10 +75,17 @@ protected:
 	float MomentumDecayRate = 400.f;    // 슬점 초당 운동량 감쇠 (cm/s)
 	UPROPERTY(EditDefaultsOnly, Category = "Slide")
 	float SlideLandEnterSpeed = 400.f;   // 착지 슬라이드 진입에 필요한 최소 수평 속도
+	UPROPERTY(EditDefaultsOnly, Category = "Slide")
+	float SlideBoostCooldown = 0.8f;   // 이 시간 안에 재진입하면 부스트 없음
 	
 	float RetainedMomentum = 0.f;
+	
 private:
+	float LastSlideEndTime = -1000.f;
+	
 	UPROPERTY() UAbilitySystemComponent* CachedASC;
+	
 	void CompensateCameraForRootMove(float PreRootZ);
+	
 	FTimerHandle ASCTimerHandle;
 };

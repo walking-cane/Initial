@@ -68,8 +68,9 @@ void AKernelItemPickup::ApplyRoll(const FKernelItemData& InRoll)
 
 	if (const UKernelItemFragment_Cosmetic* Cos = ItemInstance->FindFragmentByClass<UKernelItemFragment_Cosmetic>())
 	{
-		SpawnMeshComp1->SetSkeletalMesh(Cos->SpawnMesh.LoadSynchronous());
+		SpawnMeshComp1->SetSkeletalMesh(Cos->SpawnActorMesh);
 	}
+	
 	OriginVector = SpawnMeshComp1->GetComponentLocation();
 	
 	if (RarityFX1)

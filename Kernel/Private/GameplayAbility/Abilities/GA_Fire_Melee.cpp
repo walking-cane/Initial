@@ -2,6 +2,7 @@
 #include "AbilitySystemBlueprintLibrary.h"
 #include "Abilities/Tasks/AbilityTask_PlayMontageAndWait.h"
 #include "Abilities/Tasks/AbilityTask_WaitGameplayEvent.h"
+#include "GameplayAbility/KernelGameplayTags.h"
 #include "Item/KernelEquipmentInstance.h"
 #include "Item/KernelItemInstance.h"
 #include "Item/KernelItemFragment_Melee.h"
@@ -11,38 +12,127 @@ void UGA_Fire_Melee::Fire()
 {
 	Super::Fire();
 	
-	UAbilityTask_PlayMontageAndWait* MontageTask = 
-		UAbilityTask_PlayMontageAndWait::CreatePlayMontageAndWaitProxy(this, NAME_None, FireMontage);
-		
-	UAbilityTask_WaitGameplayEvent* WaitTag = 
-		UAbilityTask_WaitGameplayEvent::WaitGameplayEvent(this, FGameplayTag::RequestGameplayTag("Event.Melee.Hit"));
+	ComboIndex = 0;
 	
-	if (AKernelHeroCharacter* Hero = Cast<AKernelHeroCharacter>(GetAvatarActorFromActorInfo()))
+	UE_LOG(LogTemp,Log,TEXT("Melee : fire"))
+	if (!FireMontage1P)
 	{
-		if (Hero->IsLocallyControlled())
+		UE_LOG(LogTemp, Error, TEXT("[Melee] FireMontage1P 없음 — Item=%s"),
+			*GetNameSafe(EquipInst ? EquipInst->InstigatorItem : nullptr));
+		EndAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, true, true);
+		return;
+	}
+	
+	if (!FireMontage3P)
+	{
+		UE_LOG(LogTemp, Error, TEXT("[Melee] FireMontage3P 없음 — Item=%s"),
+			*GetNameSafe(EquipInst ? EquipInst->InstigatorItem : nullptr));
+		EndAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, true, true);
+		return;
+	}
+	
+	UAbilityTask_PlayMontageAndWait* MontageTask =
+	   UAbilityTask_PlayMontageAndWait::CreatePlayMontageAndWaitProxy(this, "Combo0", FireMontage3P);
+	
+	UAbilityTask_WaitGameplayEvent* WaitHitTag =
+		UAbilityTask_WaitGameplayEvent::WaitGameplayEvent(this, TAG_GameplayEvent_Melee_Hit);
+
+	UAbilityTask_WaitGameplayEvent* WaitCombo =
+	UAbilityTask_WaitGameplayEvent::WaitGameplayEvent(
+		this, TAG_GameplayEvent_Melee_ComboWindow, nullptr, false);
+	
+	if (!MontageTask || !WaitHitTag)
+	{
+		EndAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, true, true);
+		return;
+	}
+	
+	MontageTask->OnCompleted.AddDynamic(this, &ThisClass::OnMontageCompleted);
+	MontageTask->OnInterrupted.AddDynamic(this, &ThisClass::OnMontageCancelled);
+	MontageTask->OnCancelled.AddDynamic(this, &ThisClass::OnMontageCancelled);
+	WaitHitTag->EventReceived.AddDynamic(this, &ThisClass::OnMeleeHit);
+	WaitHitTag->ReadyForActivation();
+	
+	WaitCombo->EventReceived.AddDynamic(this, &ThisClass::OnComboWindow);
+	WaitCombo->ReadyForActivation();
+	
+	// 1P는 로컬 연출이므로 수동 재생
+	if (CurrentActorInfo->IsLocallyControlled() && FireMontage1P)
+	{
+		if (IKernelCosmeticInterface* CosmeticTarget = Cast<IKernelCosmeticInterface>(GetAvatarActorFromActorInfo()))
 		{
-			if (UAnimInstance* AnimInstance1P = Hero->GetMesh1P()->GetAnimInstance())
+			if (USkeletalMeshComponent* Mesh1P = CosmeticTarget->GetMesh1P())
 			{
-				AnimInstance1P->Montage_Play(FireMontage);
+				if (UAnimInstance* Anim1P = Mesh1P->GetAnimInstance())
+				{
+					Anim1P->Montage_Play(FireMontage1P);
+				}
 			}
 		}
 	}
-	
-	if (MontageTask && WaitTag)
+
+	MontageTask->ReadyForActivation();   // [변경] 마지막에
+}
+
+void UGA_Fire_Melee::StartFireLoop()
+{
+	if (!CommitAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo))
 	{
-		MontageTask->OnCompleted.AddDynamic(this, &ThisClass::OnMontageCompleted);
-		MontageTask->OnInterrupted.AddDynamic(this, &ThisClass::OnMontageCancelled);
-		MontageTask->OnCancelled.AddDynamic(this, &ThisClass::OnMontageCancelled);
-		
-		WaitTag->EventReceived.AddDynamic(this, &ThisClass::OnMeleeHit);
-		
-		MontageTask->ReadyForActivation();
-		WaitTag->ReadyForActivation();
+		EndAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, true, true);
+		return;
+	}
+	Fire();
+}
+
+void UGA_Fire_Melee::InputReleased(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo,
+	const FGameplayAbilityActivationInfo ActivationInfo)
+{
+	Super::InputReleased(Handle, ActorInfo, ActivationInfo);
+}
+
+bool UGA_Fire_Melee::IsInputHeld() const
+{
+	const FGameplayAbilitySpec* Spec = GetCurrentAbilitySpec();
+	return Spec && Spec->InputPressed;
+}
+
+void UGA_Fire_Melee::OnComboWindow(FGameplayEventData Payload)
+{
+	if (!IsInputHeld())
+	{
+		return;
+	}
+
+	// 매 타마다 코스트를 지불
+	if (!CommitAbilityCost(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo))
+	{
+		return;   // 스태미나 부족 등 → 현재 섹션으로 마무리
+	}
+
+	ComboIndex = ComboSections.IsValidIndex(ComboIndex + 1) ? ComboIndex + 1 : 0;
+	const FName Next = ComboSections[ComboIndex];
+
+	MontageJumpToSection(Next);   // 3P — ASC를 거쳐 복제됨
+
+	// 1P는 수동 재생이므로 따로 점프
+	if (CurrentActorInfo->IsLocallyControlled() && FireMontage1P)
+	{
+		if (IKernelCosmeticInterface* Cosmetic = Cast<IKernelCosmeticInterface>(GetAvatarActorFromActorInfo()))
+		{
+			if (USkeletalMeshComponent* Mesh1P = Cosmetic->GetMesh1P())
+			{
+				if (UAnimInstance* Anim1P = Mesh1P->GetAnimInstance())
+				{
+					Anim1P->Montage_JumpToSection(Next, FireMontage1P);
+				}
+			}
+		}
 	}
 }
 
 void UGA_Fire_Melee::OnMontageCompleted()
 {
+	UE_LOG(LogTemp,Warning,TEXT("MontageEnd"))
 	EndAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, true, false);
 }
 
@@ -78,6 +168,8 @@ void UGA_Fire_Melee::OnMeleeHit(FGameplayEventData Payload)
 		HitResults, StartLoc, EndLoc, FQuat::Identity, ECC_Pawn,
 		FCollisionShape::MakeSphere(TraceRadius), Params);
 	
+	DrawDebugSphere(GetWorld(), EndLoc, TraceRadius, 32, bHit ? FColor::Red : FColor::Green, false, 1.f);
+	
 	if (bHit && HitResults.Num() > 0)
 	{
 		TSet<AActor*> HitActorsThisSwing;
@@ -102,7 +194,7 @@ void UGA_Fire_Melee::OnMeleeHit(FGameplayEventData Payload)
 					{
 						// GA_FireBase에서 이미 계산된 Damage 변수 사용
 						SpecHandle.Data.Get()->SetSetByCallerMagnitude(
-							FGameplayTag::RequestGameplayTag("Data.Damage"), Damage);
+							TAG_Gameplay_Damage, Damage);
 							
 						(void) ApplyGameplayEffectSpecToTarget(
 							CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, SpecHandle, TargetData);

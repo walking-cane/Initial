@@ -19,7 +19,10 @@ public:
 	TObjectPtr<UAnimMontage> EquipMontage;
 	
 	UPROPERTY(EditDefaultsOnly, Category = "Animation")
-	TObjectPtr<UAnimMontage> FireMontage;
+	TObjectPtr<UAnimMontage> FireMontage1P;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Animation")
+	TObjectPtr<UAnimMontage> FireMontage3P;
 	
 	UPROPERTY(EditDefaultsOnly, Category = "Animation")
 	TSubclassOf<UAnimInstance> WeaponLayer1P;

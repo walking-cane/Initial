@@ -18,12 +18,7 @@ class KERNEL_API UGA_FireBase : public UGameplayAbility
 	
 public:
 	UGA_FireBase();
-	
-	virtual void InputReleased(
-		const FGameplayAbilitySpecHandle Handle, 
-		const FGameplayAbilityActorInfo* ActorInfo,
-		const FGameplayAbilityActivationInfo ActivationInfo) override;
-	
+
 protected:
 	virtual void ActivateAbility(
 		const FGameplayAbilitySpecHandle Handle, 
@@ -44,7 +39,8 @@ protected:
 	UFUNCTION() 
 	virtual void StartFireLoop();
 	
-	UPROPERTY(VisibleAnywhere, Category = "WeaponInfo") TObjectPtr<UAnimMontage> FireMontage;
+	UPROPERTY(VisibleAnywhere, Category = "WeaponInfo") TObjectPtr<UAnimMontage> FireMontage1P;
+	UPROPERTY(VisibleAnywhere, Category = "WeaponInfo") TObjectPtr<UAnimMontage> FireMontage3P;
 	UPROPERTY(VisibleAnywhere, Category = "WeaponInfo") TObjectPtr<UCurveVector> RecoilCurve;
 	UPROPERTY(VisibleAnywhere, Category = "WeaponInfo") float FireDelay;
 	UPROPERTY(VisibleAnywhere, Category = "WeaponInfo") float Damage;

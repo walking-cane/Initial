@@ -23,6 +23,8 @@ void UKernelAnimInstance::NativeUpdateAnimation(float DeltaSeconds)
 	Super::NativeUpdateAnimation(DeltaSeconds);
 
 	// GetControlRotation이 아니라 GetBaseAimRotation
+	if (!OwningPawn) return;
+	
 	CachedAimRotation   = OwningPawn->GetBaseAimRotation();
 	CachedActorRotation = OwningPawn->GetActorRotation();
 }

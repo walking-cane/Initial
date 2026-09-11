@@ -36,14 +36,6 @@ AKernelHeroCharacter::AKernelHeroCharacter(const FObjectInitializer& ObjectIniti
 	FirstPersonMesh1 = CreateDefaultSubobject<USkeletalMeshComponent>("FirstPersonMesh");
 	FirstPersonMesh1->SetupAttachment(FirstPersonCamera1);
 	
-	WeaponMeshComp1P = CreateDefaultSubobject<USkeletalMeshComponent>(("WeaponMeshComp1P"));
-	WeaponMeshComp1P->SetupAttachment(FirstPersonMesh1);
-	WeaponMeshComp1P->SetOnlyOwnerSee(true);
-	
-	WeaponMeshComp3P = CreateDefaultSubobject<USkeletalMeshComponent>("WeaponMeshComp3P");
-	WeaponMeshComp3P->SetupAttachment(GetMesh());
-	WeaponMeshComp3P->SetOwnerNoSee(true);
-	
 	GetCharacterMovement()->GetNavAgentPropertiesRef().bCanCrouch = true;
 	GetCharacterMovement()->SetCrouchedHalfHeight(60.f);
 }
@@ -88,23 +80,6 @@ void AKernelHeroCharacter::BeginPlay()
 {
 	Super::BeginPlay();
 	
-	if (FirstPersonMesh1 && WeaponMeshComp1P)
-	{
-		WeaponMeshComp1P->AttachToComponent(
-			FirstPersonMesh1, 
-			FAttachmentTransformRules::SnapToTargetNotIncludingScale, 
-			FName("WeaponSocket"));
-	}
-
-	if (GetMesh() && WeaponMeshComp3P)
-	{
-		WeaponMeshComp3P->AttachToComponent(
-			GetMesh(), 
-			FAttachmentTransformRules::SnapToTargetNotIncludingScale, 
-			FName("WeaponSocket"));
-		WeaponMeshComp3P->bOwnerNoSee = true;
-	}
-	
 	DefaultCameraRelativeZ = FirstPersonCamera1->GetRelativeLocation().Z;
 }
 
@@ -115,12 +90,6 @@ UAbilitySystemComponent* AKernelHeroCharacter::GetAbilitySystemComponent() const
 		return PS->GetKernelAbilitySystemComponent();
 	}
 	return nullptr;
-}
-
-void AKernelHeroCharacter::SetWeaponMesh(USkeletalMesh* NewWeaponMesh)
-{
-	WeaponMeshComp1P->SetSkeletalMesh(NewWeaponMesh);
-	WeaponMeshComp3P->SetSkeletalMesh(NewWeaponMesh);
 }
 
 void AKernelHeroCharacter::Tick(float DeltaSeconds)

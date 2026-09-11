@@ -9,6 +9,7 @@
 #include "GameplayAbility/KernelAbilitySystemComponent.h"
 #include "GameplayAbility/KernelGameplayTags.h"
 #include "GameplayAbility/Attributes/KernelCombatAttributeSet.h"
+#include "GameplayAbility/Attributes/KernelMovementSet.h"
 #include "KernelCharacter/Hero/KernelCharacterDefinition.h"
 #include "Messages/KernelVerbMessage.h"
 #include "Net/UnrealNetwork.h"
@@ -34,6 +35,7 @@ AKernelPlayerState::AKernelPlayerState()
 	
 	HealthSet = CreateDefaultSubobject<UKernelHealthAttributeSet>(TEXT("HealthSet"));
 	CombatSet = CreateDefaultSubobject<UKernelCombatAttributeSet>(TEXT("CombatSet"));
+	MoveSet   = CreateDefaultSubobject<UKernelMovementSet>("MoveSet");
 }
 
 void AKernelPlayerState::SetCharacterDefinition(UKernelCharacterDefinition* InDef)

@@ -12,4 +12,8 @@ class KERNEL_API UGA_Fire_Hitscan : public UGA_FireBase
 protected:
 	virtual void Fire() override;
 	void SpawnTracer(const FVector& TargetPoint);
+	
+public:
+	void InputReleased(FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo,
+	                   FGameplayAbilityActivationInfo ActivationInfo) override;
 };

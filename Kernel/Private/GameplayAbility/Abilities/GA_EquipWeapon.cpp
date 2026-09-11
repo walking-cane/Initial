@@ -15,25 +15,25 @@ UGA_EquipWeapon::UGA_EquipWeapon()
 }
 
 void UGA_EquipWeapon::ActivateAbility(const FGameplayAbilitySpecHandle Handle,
-                                      const FGameplayAbilityActorInfo* ActorInfo, 
+                                      const FGameplayAbilityActorInfo* ActorInfo,
                                       const FGameplayAbilityActivationInfo ActivationInfo,
                                       const FGameplayEventData* TriggerEventData)
 {
-	UE_LOG(LogTemp, Error, TEXT("GA_EquipWeapon :: Activate"))
 	Super::ActivateAbility(Handle, ActorInfo, ActivationInfo, TriggerEventData);
-	
+
 	Player = TriggerEventData ? TriggerEventData->Instigator : nullptr;
 	if (!TriggerEventData || !Player)
 	{
-		UE_LOG(LogTemp, Error, TEXT("GA_EquipWeapon :: No Data"))
+		UE_LOG(LogTemp, Error, TEXT("GA_EquipWeapon :: No Data"));
 		EndAbility(Handle, ActorInfo, ActivationInfo, true, true);
 		return;
 	}
-	
-	UKernelEquipmentInstance* EquipInstance = Cast<UKernelEquipmentInstance>(const_cast<UObject*>(TriggerEventData->OptionalObject.Get()));
+
+	UKernelEquipmentInstance* EquipInstance =
+		Cast<UKernelEquipmentInstance>(const_cast<UObject*>(TriggerEventData->OptionalObject.Get()));
 	if (!EquipInstance || !EquipInstance->InstigatorItem)
 	{
-		UE_LOG(LogTemp, Error, TEXT("GA_EquipWeapon :: Invalid Equipment Instance"))
+		UE_LOG(LogTemp, Error, TEXT("GA_EquipWeapon :: Invalid Equipment Instance"));
 		EndAbility(Handle, ActorInfo, ActivationInfo, true, true);
 		return;
 	}
@@ -41,36 +41,59 @@ void UGA_EquipWeapon::ActivateAbility(const FGameplayAbilitySpecHandle Handle,
 	CosmeticFrag = EquipInstance->InstigatorItem->FindFragmentByClass<UKernelItemFragment_Cosmetic>();
 	if (!CosmeticFrag)
 	{
-		UE_LOG(LogTemp, Error, TEXT("GA_EquipWeapon :: No Equippable Fragment found!"))
+		UE_LOG(LogTemp, Error, TEXT("GA_EquipWeapon :: No Cosmetic Fragment found!"));
 		EndAbility(Handle, ActorInfo, ActivationInfo, true, true);
 		return;
 	}
-	
+
 	WeaponFrag = EquipInstance->InstigatorItem->FindFragmentByClass<UKernelItemFragment_Weapon>();
 	if (!WeaponFrag)
 	{
-		UE_LOG(LogTemp, Error, TEXT("GA_EquipWeapon :: No Weapon Fragment found!"))
+		UE_LOG(LogTemp, Error, TEXT("GA_EquipWeapon :: No Weapon Fragment found!"));
 		EndAbility(Handle, ActorInfo, ActivationInfo, true, true);
 		return;
 	}
-	
+
 	UKernelCosmeticComponent* CosmeticComp = Player->FindComponentByClass<UKernelCosmeticComponent>();
 	if (!CosmeticComp)
 	{
-		UE_LOG(LogTemp, Error, TEXT("GA_EquipWeapon :: Cant find CosmeticComponent!"))
+		UE_LOG(LogTemp, Error, TEXT("GA_EquipWeapon :: Cant find CosmeticComponent!"));
 		EndAbility(Handle, ActorInfo, ActivationInfo, true, true);
 		return;
 	}
 	
-	if (CosmeticFrag->SpawnMesh.IsValid())
+	TArray<FKernelWeaponAttachEntry> Entries;
+	Entries.Reserve(CosmeticFrag->AttachRules.Num());
+
+	// 건틀릿, 쌍검같은 무기를 여러개 부착하는 경우를 위해 반복문
+	for (const FKernelWeaponAttachRule& Rule : CosmeticFrag->AttachRules)
 	{
-		CosmeticComp->ChangeWeapon(CosmeticFrag->SpawnMesh.LoadSynchronous());
-		UE_LOG(LogTemp,Warning,TEXT("[GA_EquipWeapon] ChangeWeapon"))
+		if (Rule.WeaponActorClass.IsNull())
+		{
+			continue;
+		}
+
+		UClass* LoadedClass = Rule.WeaponActorClass.LoadSynchronous();
+		if (!LoadedClass)
+		{
+			UE_LOG(LogTemp, Error, TEXT("GA_EquipWeapon :: Failed to load %s"),
+				*Rule.WeaponActorClass.ToString());
+			continue;
+		}
+
+		FKernelWeaponAttachEntry& Entry = Entries.AddDefaulted_GetRef();
+		Entry.WeaponActorClass = LoadedClass;
+		Entry.AttachSocket1P = Rule.AttachSocket1P;
+		Entry.AttachSocket3P = Rule.AttachSocket3P;
+		Entry.AttachTransform = Rule.AttachTransform;
 	}
-	
+
+	// 빈 배열이어도 호출한다. 이전 무기를 정리하는 경로이기도 하다.
+	CosmeticComp->SetWeaponAttachEntries(Entries);
+
 	CosmeticComp->ApplyWeaponLayer(WeaponFrag->WeaponLayer1P, WeaponFrag->WeaponLayer3P);
 	CosmeticComp->PlayEquipMontage(WeaponFrag->EquipMontage);
-	
+
 	if (EquipLockEffect && WeaponFrag->EquipMontage)
 	{
 		const float LockDuration = WeaponFrag->EquipMontage->GetPlayLength() - 0.3f;
@@ -82,6 +105,6 @@ void UGA_EquipWeapon::ActivateAbility(const FGameplayAbilitySpecHandle Handle,
 			(void)ApplyGameplayEffectSpecToOwner(Handle, ActorInfo, ActivationInfo, Spec);
 		}
 	}
-	
+
 	EndAbility(Handle, ActorInfo, ActivationInfo, true, false);
 }

@@ -2,7 +2,8 @@
 
 
 #include "GameplayAbility/Abilities/GA_Fire_Projectile.h"
-
+#include "AbilitySystemComponent.h"
+#include "GameplayAbility/KernelGameplayTags.h"
 #include "Item/KernelEquipmentInstance.h"
 #include "Weapon/KernelProjectileBase.h"
 
@@ -21,7 +22,7 @@ void UGA_Fire_Projectile::Fire()
 	FGameplayEffectSpecHandle Spec = MakeOutgoingGameplayEffectSpec(DamageEffectClass);
 	if (Spec.IsValid())
 	{
-		Spec.Data->SetSetByCallerMagnitude(FGameplayTag::RequestGameplayTag("Data.Damage"), Damage);
+		Spec.Data->SetSetByCallerMagnitude(TAG_Gameplay_Damage, Damage);
 	}
 	
 	const FTransform SpawnTM(SpawnRotation, MuzzleLocation);
@@ -32,4 +33,12 @@ void UGA_Fire_Projectile::Fire()
 
 	Proj->InitAsDamaging(GetAbilitySystemComponentFromActorInfo(), Spec, EquipInst ? EquipInst->InstigatorItem : nullptr, ProjectileSpeed);
 	Proj->FinishSpawning(SpawnTM);
+	
+	// For visual (Replicated)
+	FGameplayCueParameters CueParams;
+	CueParams.Location = MuzzleLocation;
+	CueParams.Normal = SpawnRotation.Vector();
+	CueParams.SourceObject = EquipInst ? EquipInst : nullptr;
+	
+	UGameplayAbility::K2_ExecuteGameplayCueWithParams(TAG_GameplayCue_Projectile, CueParams);
 }

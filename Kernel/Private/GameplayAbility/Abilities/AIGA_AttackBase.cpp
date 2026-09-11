@@ -112,7 +112,7 @@ void UAIGA_AttackBase::OnHitEventReceived(FGameplayEventData Payload)
 				if (SpecHandle.IsValid())
 				{
 					SpecHandle.Data.Get()->SetSetByCallerMagnitude(
-						FGameplayTag::RequestGameplayTag(FName("Data.Damage")), Damage);
+						TAG_Gameplay_Damage, Damage);
 
 					(void) ApplyGameplayEffectSpecToTarget(
 						CurrentSpecHandle,

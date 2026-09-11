@@ -75,7 +75,6 @@ void UGA_Crouch::EndAbility(const FGameplayAbilitySpecHandle Handle, const FGame
 			{
 				KernelCMC->SetMovementMode(MOVE_Walking);
 			}
-			
 			KernelCMC->OnSlideStateChanged.Remove(SlideStateHandle);   // 바인딩 해제 필수
 			SlideStateHandle.Reset();
 		}

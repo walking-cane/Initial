@@ -40,7 +40,6 @@ void UKernelEquipmentInstance::OnEquipped(AActor* Owner)
 		UE_LOG(LogTemp, Warning, TEXT("[Equip] GiveAbilitySet to %s (Item=%s)"),
 			*GetNameSafe(KernelASC->GetOwnerActor()), *GetNameSafe(InstigatorItem));
 	}
-	// [삭제됨] GrantEquipEffect 별도 처리 블록 — GE는 AbilitySet의 GrantedEffects로 넣으면 됨
 }
 
 void UKernelEquipmentInstance::UnEquipped()
@@ -61,7 +60,7 @@ void UKernelEquipmentInstance::UnEquipped()
 	{
 		if (UKernelCosmeticComponent* Cosmetic = OwnerActor->FindComponentByClass<UKernelCosmeticComponent>())
 		{
-			Cosmetic->ChangeWeapon(nullptr);
+			Cosmetic->ClearWeaponAttachEntries();
 		}
 	}
 

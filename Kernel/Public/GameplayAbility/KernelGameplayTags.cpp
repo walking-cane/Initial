@@ -8,7 +8,8 @@ UE_DEFINE_GAMEPLAY_TAG(TAG_Gameplay_DamageSelfDestruct, "Gameplay.DamageSelfDest
 UE_DEFINE_GAMEPLAY_TAG(TAG_Gameplay_FellOutOfWorld,     "Gameplay.FellOutOfWorld");
 UE_DEFINE_GAMEPLAY_TAG(TAG_Kernel_Damage_Message,       "Kernel.Damage.Message");
 
-UE_DEFINE_GAMEPLAY_TAG(TAG_GameplayEvent_Melee_Hit,     "GameplayEvent.Melee.Hit");
+UE_DEFINE_GAMEPLAY_TAG(TAG_GameplayEvent_Melee_Hit,          "GameplayEvent.Melee.Hit");
+UE_DEFINE_GAMEPLAY_TAG(TAG_GameplayEvent_Melee_ComboWindow,  "GameplayEvent.Melee.ComboWindow");
 
 UE_DEFINE_GAMEPLAY_TAG(TAG_Kernel_EnemyState_Changed,   "Kernel.AI.Message.TargetChanged");
 UE_DEFINE_GAMEPLAY_TAG(TAG_Input_WeaponSwap,            "InputTag.Weapon.Swap");
@@ -39,3 +40,5 @@ UE_DEFINE_GAMEPLAY_TAG(TAG_UI_Warning,                  "UI.Warning")
 UE_DEFINE_GAMEPLAY_TAG(TAG_UI_ToggleLayout,             "UI.Action.ToggleLayout")
 UE_DEFINE_GAMEPLAY_TAG(TAG_UI_ToastMessage,             "UI.Action.ToastMessage")
 UE_DEFINE_GAMEPLAY_TAG(TAG_UI_RollAffix,                "UI.Action.RollAffix")
+
+UE_DEFINE_GAMEPLAY_TAG(TAG_GameplayCue_Projectile,      "GameplayCue.Projectile")

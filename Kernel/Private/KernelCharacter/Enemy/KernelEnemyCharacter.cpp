@@ -212,7 +212,7 @@ void AKernelEnemyCharacter::EnsureDissolveMIDs()
 	if (DissolveMIDs.Num() > 0) return;   // 한 번만 생성
 
 	TArray<USkeletalMeshComponent*> Meshes;
-	Meshes.Add(GetMesh());
+	Meshes.Add(GetMesh3P());
 	if (USkeletalMeshComponent* M1P = GetMesh1P()) Meshes.Add(M1P);
 
 	for (USkeletalMeshComponent* M : Meshes)

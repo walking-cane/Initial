@@ -120,5 +120,9 @@ void UKernelAbilitySet::GiveToAbilitySystem(
 		{
 			OutGrantedHandles->AddGameplayEffectHandle(GameplayEffectHandle);
 		}
+		
+		UE_LOG(LogAbilitySystem, Log,
+			TEXT("GrantedEffects[%d] on ability set [%s] is Granted"),
+			EffectIndex, *GetNameSafe(this));
 	}
 }

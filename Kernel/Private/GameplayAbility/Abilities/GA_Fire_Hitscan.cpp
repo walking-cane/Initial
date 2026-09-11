@@ -1,7 +1,6 @@
 #include "GameplayAbility/Abilities/GA_Fire_Hitscan.h"
 #include "AbilitySystemBlueprintLibrary.h"
 #include "AbilitySystemComponent.h"
-#include "GameplayAbility/KernelGameplayTags.h"
 #include "Weapon/KernelProjectileBase.h"
 
 void UGA_Fire_Hitscan::Fire()
@@ -64,4 +63,12 @@ void UGA_Fire_Hitscan::SpawnTracer(const FVector& TargetPoint)
 	Tracer->InitAsTracer(TracerSpeed, FMath::Max(Distance / TracerSpeed, 0.05f));
 
 	Tracer->FinishSpawning(SpawnTM);
+}
+
+void UGA_Fire_Hitscan::InputReleased(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo,
+								 const FGameplayAbilityActivationInfo ActivationInfo)
+{
+	Super::InputReleased(Handle, ActorInfo, ActivationInfo);
+	
+	EndAbility(Handle, ActorInfo, ActivationInfo, true, false);
 }

@@ -37,14 +37,10 @@ public:
 	virtual UAbilitySystemComponent* GetAbilitySystemComponent() const override;
 	
 	virtual USkeletalMeshComponent* GetMesh1P() override { return FirstPersonMesh1; }
-	UFUNCTION(BlueprintCallable)
-	virtual USkeletalMeshComponent* GetWeaponMesh1P() override { return WeaponMeshComp1P; }
-	virtual USkeletalMeshComponent* GetWeaponMesh3P() override { return WeaponMeshComp3P; }
-	
+	virtual USkeletalMeshComponent* GetMesh3P() override { return GetMesh(); }
+
 	virtual void OnDeath1P(UAnimMontage* DeathMontage1P) override;
 	virtual UAnimMontage* GetDeathMontage() override;
-	
-	void SetWeaponMesh(USkeletalMesh* NewWeaponMesh);
 	
 	void AddCameraHeightCompensation(float DeltaZ);
 	
@@ -60,9 +56,6 @@ protected:
 	UPROPERTY(VisibleAnywhere) TObjectPtr<UKernelQuickBarComponent> QuickBarComp;
 	UPROPERTY(VisibleAnywhere) TObjectPtr<UKernelCosmeticComponent> CosmeticComp;
 	UPROPERTY(VisibleAnywhere) TObjectPtr<UKernelHeroWeaponComponent> WeaponComp;
-	
-	UPROPERTY(VisibleAnywhere) TObjectPtr<USkeletalMeshComponent> WeaponMeshComp1P;
-	UPROPERTY(VisibleAnywhere) TObjectPtr<USkeletalMeshComponent> WeaponMeshComp3P;
 	
 	UPROPERTY(EditDefaultsOnly) TObjectPtr<UCameraComponent> FirstPersonCamera1;
 	UPROPERTY(EditDefaultsOnly) TObjectPtr<USkeletalMeshComponent> FirstPersonMesh1;

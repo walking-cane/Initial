@@ -9,6 +9,7 @@
 #include "GameplayAbility/Attributes/KernelHealthAttributeSet.h"
 #include "KernelPlayerState.generated.h"
 
+class UKernelMovementSet;
 class UKernelCharacterDefinition;
 class UKernelCombatAttributeSet;
 class UKernelAbilitySystemComponent;
@@ -72,6 +73,7 @@ protected:
 	UPROPERTY() TObjectPtr<UKernelAbilitySystemComponent> KernelASC;
 	UPROPERTY() TObjectPtr<UKernelHealthAttributeSet> HealthSet;
 	UPROPERTY() TObjectPtr<UKernelCombatAttributeSet> CombatSet;
+	UPROPERTY() TObjectPtr<UKernelMovementSet> MoveSet;
 	
 	UPROPERTY(Replicated)
 	TObjectPtr<UKernelCharacterDefinition> CharacterDefinition; // 임시로 기본 캐릭터 Def 를 설정함 (TODO : 런칭 이전에 비우기)

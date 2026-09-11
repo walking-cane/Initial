@@ -3,6 +3,7 @@
 #include "AbilitySystemBlueprintLibrary.h"
 #include "AbilitySystemComponent.h"
 #include "AbilitySystemGlobals.h"
+#include "AbilitySystemLog.h"
 #include "GameplayCueManager.h"
 #include "Abilities/Tasks/AbilityTask_WaitDelay.h"
 #include "Affixes/KernelAffixCombatLibrary.h"
@@ -28,6 +29,8 @@ void UGA_FireBase::ActivateAbility(const FGameplayAbilitySpecHandle Handle, cons
 	const FGameplayAbilityActivationInfo ActivationInfo, const FGameplayEventData* TriggerEventData)
 {
 	Super::ActivateAbility(Handle, ActorInfo, ActivationInfo, TriggerEventData);
+	
+	UE_LOG(LogAbilitySystem, Warning, TEXT("[FireBase] Activate"));
 	
 	InitializeWeapon();
 	
@@ -108,13 +111,6 @@ void UGA_FireBase::AddRecoilKick()
 	}
 }
 
-void UGA_FireBase::InputReleased(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo,
-								 const FGameplayAbilityActivationInfo ActivationInfo)
-{
-	Super::InputReleased(Handle, ActorInfo, ActivationInfo);
-	EndAbility(Handle, ActorInfo, ActivationInfo, true, false);
-}
-
 void UGA_FireBase::EndAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo,
 							  const FGameplayAbilityActivationInfo ActivationInfo, bool bReplicateEndAbility, bool bWasCancelled)
 {
@@ -125,6 +121,7 @@ void UGA_FireBase::EndAbility(const FGameplayAbilitySpecHandle Handle, const FGa
 		CachedWeaponComp->StopRecoil();
 	}
 	
+	UE_LOG(LogTemp,Log,TEXT("EndAbility"))
 	Super::EndAbility(Handle, ActorInfo, ActivationInfo, bReplicateEndAbility, bWasCancelled);
 }
 
@@ -158,12 +155,6 @@ void UGA_FireBase::InitializeWeapon()
 		return;
 	}
 	
-	if (IKernelCosmeticInterface* CosmeticTarget = Cast<IKernelCosmeticInterface>(OwnerActor))
-	{
-		WeaponMesh1P = CosmeticTarget->GetWeaponMesh1P();
-		WeaponMesh3P = CosmeticTarget->GetWeaponMesh3P();
-	}
-	
 	const UKernelItemInstance* ItemInst = EquipInst->InstigatorItem;
 
 	const UKernelItemFragment_Combat* StatFrag = ItemInst->FindFragmentByClass<UKernelItemFragment_Combat>();
@@ -175,10 +166,11 @@ void UGA_FireBase::InitializeWeapon()
 		FireDelay = StatFrag->FireDelay;
 		Damage = StatFrag->BaseDamage + (ItemInst->Level * StatFrag->MultiplyStatsPerLevel);
 	}
-
+	
 	if (WeaponFrag)
 	{
-		FireMontage = WeaponFrag->FireMontage;
+		FireMontage1P = WeaponFrag->FireMontage1P;
+		FireMontage3P = WeaponFrag->FireMontage3P;
 	}
 
 	if (RecoilFrag)

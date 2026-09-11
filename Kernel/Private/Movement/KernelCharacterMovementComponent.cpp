@@ -5,7 +5,9 @@
 
 #include "GameFramework/Character.h"
 #include "GameFramework/PhysicsVolume.h"
+#include "GameplayAbility/KernelGameplayTags.h"
 #include "GameplayAbility/Attributes/KernelCombatAttributeSet.h"
+#include "GameplayAbility/Attributes/KernelMovementSet.h"
 #include "KernelCharacter/Hero/KernelHeroCharacter.h"
 
 void UKernelCharacterMovementComponent::InitializeASC(UAbilitySystemComponent* InASC)
@@ -33,48 +35,70 @@ void UKernelCharacterMovementComponent::TickComponent(float DeltaTime, enum ELev
 
 float UKernelCharacterMovementComponent::GetMaxSpeed() const
 {
+	// 사망중에는 이동불가
+	if (CachedASC && CachedASC->HasMatchingGameplayTag(TAG_Status_Death_Dying))
+	{
+		return 0.f;
+	}
+
+	// ── 2단계: 이 상태의 "기준 속도"를 정한다
+	float Speed = 0.f;
+	bool bApplyModifiers = true;
+
 	if (IsCustomMovementMode(EKernelCustomMovementMode::Slide))
 	{
-		return SlideMaxSpeed;
+		Speed = SlideMaxSpeed;
+		bApplyModifiers = false;    // 슬라이드는 운동량 기반
 	}
-
-	if (MovementMode == MOVE_Falling && RetainedMomentum > 0.f)
+	else if (MovementMode == MOVE_Falling && RetainedMomentum > 0.f)
 	{
+		// 이미 확정된 운동량. 사후에 무기 배율로 깎으면 공중에서 감속 — 그대로 둠
 		return FMath::Max(RetainedMomentum, Super::GetMaxSpeed());
 	}
-
-	// 크라우치 중에는 어트리뷰트 속도를 무시하고 엔진 크라우치 속도를 쓴다
-	if (IsCrouching() && IsMovingOnGround())
+	else if (IsCrouching() && IsMovingOnGround())
 	{
-		return MaxWalkSpeedCrouched;
+		Speed = MaxWalkSpeedCrouched;   // 절대속도 어트리뷰트는 무시 (기존 의도 유지)
+	}
+	else
+	{
+		bool bFound = false;
+		const float Custom = CachedASC
+			? CachedASC->GetGameplayAttributeValue(
+				  UKernelCombatAttributeSet::GetMovementSpeedAttribute(), bFound)
+			: 0.f;
+
+		Speed = bFound ? Custom : Super::GetMaxSpeed();   // [변경] 미부여 시 0 대신 폴백
 	}
 
-	float BaseSpeed = Super::GetMaxSpeed();
+	if (!bApplyModifiers)
+	{
+		return Speed;
+	}
 
+	// ── 3단계: 방향 제한. 상향 보정만 막고 하향 보정은 통과시킨다
+	const FVector InputDir = GetCurrentAcceleration().GetSafeNormal();
+	if (!InputDir.IsZero() && UpdatedComponent)
+	{
+		const float Dot = FVector::DotProduct(UpdatedComponent->GetForwardVector(), InputDir);
+		if (Dot < 0.3f)
+		{
+			Speed = FMath::Min(Speed, Super::GetMaxSpeed());   // [변경] 분기 → 상한
+		}
+	}
+
+	// ── 4단계: 무기/버프 배율. 여기가 유일한 적용 지점
 	if (CachedASC)
 	{
-		float CustomSpeed = CachedASC->GetNumericAttribute(UKernelCombatAttributeSet::GetMovementSpeedAttribute());
-		FVector InputDir = GetCurrentAcceleration().GetSafeNormal();
-
-		if (!InputDir.IsZero())
+		bool bFound = false;
+		const float Mult = CachedASC->GetGameplayAttributeValue(
+			UKernelMovementSet::GetMoveSpeedMultiplierAttribute(), bFound);
+		if (bFound)
 		{
-			FVector ForwardDir = GetOwner()->GetActorForwardVector();
-			float DotProduct = FVector::DotProduct(ForwardDir, InputDir);
-
-			if (DotProduct >= 0.3f)
-			{
-				return CustomSpeed;
-			}
-			else
-			{
-				return BaseSpeed;
-			}
+			Speed *= Mult;
 		}
-		// No Input (No acceleration)
-		return CustomSpeed;
 	}
-	// Failed Caching ASC
-	return BaseSpeed;
+
+	return Speed;
 }
 
 void UKernelCharacterMovementComponent::OnMovementModeChanged(EMovementMode PreviousMovementMode,
@@ -89,6 +113,7 @@ void UKernelCharacterMovementComponent::OnMovementModeChanged(EMovementMode Prev
 	if (bWasSliding)
 	{
 		bOrientRotationToMovement = true;
+		LastSlideEndTime = GetWorld() ? GetWorld()->GetTimeSeconds() : 0.f;   // 추가
 		OnSlideStateChanged.Broadcast(false);
 		
 		// 점프로 나가는 경우에만 운동량을 공중으로 넘긴다
@@ -106,11 +131,14 @@ void UKernelCharacterMovementComponent::OnMovementModeChanged(EMovementMode Prev
 	// ===== 슬라이드 진입 =====
 	if (IsCustomMovementMode(EKernelCustomMovementMode::Slide))
 	{
-		// 리셋보다 먼저 읽어야 한다. 슬라이드 점프로 넘어온 착지면 부스트를 생략.
 		const bool bFromSlideJump = (RetainedMomentum > 0.f);
-		const float EffectiveBoost = bFromSlideJump ? 1.f : SlideBoost;
 
-		// Super가 else 분기에서 날린 지면 상태를 복구
+		const float Now = GetWorld() ? GetWorld()->GetTimeSeconds() : 0.f;
+		const bool bOnCooldown = (Now - LastSlideEndTime) < SlideBoostCooldown;
+
+		// 슬라이드 점프 착지거나 쿨다운 중이면 현재 속도를 그대로 쓴다
+		const bool bAllowBoost = !bFromSlideJump && !bOnCooldown;
+
 		bCrouchMaintainsBaseLocation = true;
 		SetGroundMovementMode(MOVE_Walking);
 
@@ -121,12 +149,15 @@ void UKernelCharacterMovementComponent::OnMovementModeChanged(EMovementMode Prev
 		bOrientRotationToMovement = false;
 
 		const FVector Dir = Velocity.GetSafeNormal2D();
-		const float EntrySpeed = FMath::Clamp(
-			Velocity.Size2D() * EffectiveBoost, SlideMinSpeed, SlideMaxSpeed);
+		const float CurSpeed = Velocity.Size2D();
+
+		const float EntrySpeed = bAllowBoost
+			? FMath::Clamp(CurSpeed * SlideBoost, SlideMinSpeed, SlideMaxSpeed)
+			: FMath::Min(CurSpeed, SlideMaxSpeed);
+
 		Velocity = Dir * EntrySpeed;
 
-		RetainedMomentum = 0.f;   // 다 읽었으니 해제
-		
+		RetainedMomentum = 0.f;
 		OnSlideStateChanged.Broadcast(true);
 	}
 
@@ -203,6 +234,7 @@ void UKernelCharacterMovementComponent::PhysSlide(float deltaTime, int32 Iterati
 		StartNewPhysics(deltaTime, Iterations);
 		return;
 	}
+	
 	CurrentFloor = FloorResult;
 
 	// 경사 가속
@@ -278,7 +310,6 @@ void UKernelCharacterMovementComponent::PhysSlide(float deltaTime, int32 Iterati
 	}
 
 	// --- 종료 조건 ---
-	// 진입 하한(SlideMinSpeed)이 아니라 종료 전용 값을 쓴다.
 	if (Velocity.SizeSquared() < FMath::Square(SlideExitSpeed))
 	{
 		SetMovementMode(MOVE_Walking);
