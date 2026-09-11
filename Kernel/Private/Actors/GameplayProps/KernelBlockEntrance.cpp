@@ -118,7 +118,7 @@ void AKernelBlockEntrance::OnRep_GatheredPlayerStates()
 	Message.TotalCount = CountExistPlayers();
 	Message.bIsLocalPlayerReady = GatheredPlayerStates.Contains(PS);
 
-	UGameplayMessageSubsystem::Get(this).BroadcastMessage(TAG_Interact_PlayerReady, Message);
+	UGameplayMessageSubsystem::Get(this).BroadcastMessage(TAG_Status_PlayerReady, Message);
 }
 
 void AKernelBlockEntrance::OnRep_Opening()

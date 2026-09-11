@@ -25,19 +25,19 @@
 		false, 
 		0.f);
   	
-  	if (TargetTags.HasTag(FGameplayTag::RequestGameplayTag("State.Parrying")))
+  	if (TargetTags.HasTag(TAG_Status_Parrying))
   	{
   		UE_LOG(LogTemp,Warning,TEXT("ExecCalc :: Parry Succeeded!"))
   		
   		FGameplayEventData ParryPayload;
   		ParryPayload.Instigator = SourceASC->GetAvatarActor();
   		TargetASC->HandleGameplayEvent(
-			  FGameplayTag::RequestGameplayTag("Event.Defense.ParrySuccess"), &ParryPayload);
+			  TAG_GameplayEvent_Parry_Success, &ParryPayload);
 
   		FGameplayEventData StunPayload;
   		StunPayload.Target = TargetASC->GetAvatarActor();
   		SourceASC->HandleGameplayEvent(
-			  FGameplayTag::RequestGameplayTag("Event.Attack.Parried"), &StunPayload);
+			  TAG_GameplayEvent_Parry_Parried, &StunPayload);
 
   		return;
   	}

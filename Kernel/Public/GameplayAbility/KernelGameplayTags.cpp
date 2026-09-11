@@ -10,6 +10,8 @@ UE_DEFINE_GAMEPLAY_TAG(TAG_Kernel_Damage_Message,       "Kernel.Damage.Message")
 
 UE_DEFINE_GAMEPLAY_TAG(TAG_GameplayEvent_Melee_Hit,          "GameplayEvent.Melee.Hit");
 UE_DEFINE_GAMEPLAY_TAG(TAG_GameplayEvent_Melee_ComboWindow,  "GameplayEvent.Melee.ComboWindow");
+UE_DEFINE_GAMEPLAY_TAG(TAG_GameplayEvent_Parry_Success,      "GameplayEvent.Parry.Success");
+UE_DEFINE_GAMEPLAY_TAG(TAG_GameplayEvent_Parry_Parried,      "GameplayEvent.Parry.Parried");
 
 UE_DEFINE_GAMEPLAY_TAG(TAG_Kernel_EnemyState_Changed,   "Kernel.AI.Message.TargetChanged");
 UE_DEFINE_GAMEPLAY_TAG(TAG_Input_WeaponSwap,            "InputTag.Weapon.Swap");
@@ -23,7 +25,6 @@ UE_DEFINE_GAMEPLAY_TAG(TAG_Input_ScoreBoard,            "InputTag.ScoreBoard");
 
 UE_DEFINE_GAMEPLAY_TAG(TAG_GameplayCue_Movement_Slide,  "GameplayCue.Character.Crouch");
 
-UE_DEFINE_GAMEPLAY_TAG(TAG_Interact_PlayerReady,        "Status.Player.Ready");
 UE_DEFINE_GAMEPLAY_TAG(TAG_Interact_OnFocus,            "Interact.OnFocus");
 UE_DEFINE_GAMEPLAY_TAG(TAG_Interact_EndFocus,           "Interact.EndFocus");
 UE_DEFINE_GAMEPLAY_TAG(TAG_Interact_Crate,              "Interact.Crate");
@@ -34,7 +35,9 @@ UE_DEFINE_GAMEPLAY_TAG(TAG_Stats_DamageTotal_Changed,           "Kernel.Damage.T
 
 UE_DEFINE_GAMEPLAY_TAG(TAG_Status_Death_Dying,          "Status.Death.Dying")
 UE_DEFINE_GAMEPLAY_TAG(TAG_Status_Death_Dead,           "Status.Death.Dead")
+UE_DEFINE_GAMEPLAY_TAG(TAG_Status_Parrying,             "Status.Parrying")
 UE_DEFINE_GAMEPLAY_TAG(TAG_Status_Sprint,               "Status.Sprint")
+UE_DEFINE_GAMEPLAY_TAG(TAG_Status_PlayerReady,          "Status.Player.Ready");
 
 UE_DEFINE_GAMEPLAY_TAG(TAG_UI_Warning,                  "UI.Warning")
 UE_DEFINE_GAMEPLAY_TAG(TAG_UI_ToggleLayout,             "UI.Action.ToggleLayout")

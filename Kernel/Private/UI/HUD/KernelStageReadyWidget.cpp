@@ -12,7 +12,7 @@ void UKernelStageReadyWidget::NativeConstruct()
 	Super::NativeConstruct();
 	
 	StageReadyListenerHandle = UGameplayMessageSubsystem::Get(this).RegisterListener(
-		TAG_Interact_PlayerReady, this, &ThisClass::RefreshReadyState);
+		TAG_Status_PlayerReady, this, &ThisClass::RefreshReadyState);
 	DeActivateListenerHandle = UGameplayMessageSubsystem::Get(this).RegisterListener(
 		FGameplayTag::RequestGameplayTag("Interact.EndFocus"), this, &ThisClass::DeActivateWidget);
 
