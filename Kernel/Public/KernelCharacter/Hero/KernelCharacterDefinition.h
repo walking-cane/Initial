@@ -6,6 +6,7 @@
 #include "Item/KernelItemTypes.h"
 #include "KernelCharacterDefinition.generated.h"
 
+class UKernelArtifactPool;
 class UKernelAbilitySet;
 
 UCLASS(BlueprintType)
@@ -46,4 +47,7 @@ public:
 	TSubclassOf<UAnimInstance> AnimClass3P;
 	UPROPERTY(EditDefaultsOnly, Category = "Cosmetic")
 	TSubclassOf<UAnimInstance> AnimClass1P;
+	
+	UPROPERTY(EditDefaultsOnly)
+	const UKernelArtifactPool* ArtifactPool;
 };

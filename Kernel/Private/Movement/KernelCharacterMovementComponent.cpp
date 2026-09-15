@@ -20,17 +20,12 @@ void UKernelCharacterMovementComponent::TickComponent(float DeltaTime, enum ELev
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 
+	// For Debug
 	GEngine->AddOnScreenDebugMessage(
 		-1, 
 		-1, 
 		FColor::White, 
 		FString::Printf(TEXT("Speed : %f"), Velocity.Size()));
-	
-	// 공중 운동량을 서서히 감쇠시키고 싶다면 여기에 추가한다.
-	// if (RetainedMomentum > 0.f && MovementMode == MOVE_Falling)
-	// {
-	//     RetainedMomentum = FMath::Max(0.f, RetainedMomentum - MomentumDecayRate * DeltaTime);
-	// }
 }
 
 float UKernelCharacterMovementComponent::GetMaxSpeed() const
@@ -74,18 +69,7 @@ float UKernelCharacterMovementComponent::GetMaxSpeed() const
 	{
 		return Speed;
 	}
-
-	// ── 3단계: 방향 제한. 상향 보정만 막고 하향 보정은 통과시킨다
-	const FVector InputDir = GetCurrentAcceleration().GetSafeNormal();
-	if (!InputDir.IsZero() && UpdatedComponent)
-	{
-		const float Dot = FVector::DotProduct(UpdatedComponent->GetForwardVector(), InputDir);
-		if (Dot < 0.3f)
-		{
-			Speed = FMath::Min(Speed, Super::GetMaxSpeed());   // [변경] 분기 → 상한
-		}
-	}
-
+	 
 	// ── 4단계: 무기/버프 배율. 여기가 유일한 적용 지점
 	if (CachedASC)
 	{

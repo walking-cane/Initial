@@ -8,6 +8,8 @@
 #include "Item/KernelItemTypes.h"
 #include "KernelPlayerController.generated.h"
 
+class UKernelArtifactDefinition;
+struct FKernelArtifactOffer;
 class AKernelRewardCrate;
 enum class EKernelGamePhase : uint8;
 class UKernelItemInstance;
@@ -37,7 +39,8 @@ public:
 
 	UFUNCTION(Exec) void Kernel_DumpRanges();
 	UFUNCTION(Exec) void Kernel_TestRoll(int32 Count = 5);
-	
+	void OfferArtifacts(const FKernelArtifactOffer& Offer);
+
 	virtual UAbilitySystemComponent* GetAbilitySystemComponent() const override;
 	
 	void ReportUnlocksToServer();
@@ -47,18 +50,14 @@ public:
 	UFUNCTION(Exec) void Save_ResetProfile();
 	UFUNCTION(Exec) void Save_Dump();
 	
-	/** [서버] 이 플레이어에게 드롭을 발급하고 클라에 스폰 지시. DropId 반환 */
 	int32 GrantLocalDrop(const FKernelItemData& Roll, const FTransform& Xform);
 
-	// [ClientRPC] 클라이언트에게 아이템을 로컬로 드랍하도록 명령
 	UFUNCTION(Client, Reliable)
 	void Client_SpawnLocalDrop(int32 InDropId, const FKernelItemData& InRoll, const FTransform& Xform);
 
-	// [ServerRPC] 클라이언트가 서버에게 로컬 아이템 획득을 보고, 공유된 서버 아이템은 ItemManager로 직접 처리.
 	UFUNCTION(Server, Reliable)
 	void Server_TakeDrop(int32 InDropId);
 
-	// [ServerRPC] 클라이언트가 본인 화면의 로컬 아이템을 모든 클라이언트에게 공유하도록 서버에게 요청
 	UFUNCTION(Server, Reliable)
 	void Server_ShareDrop(int32 InDropId, const FTransform& Xform);
 	
@@ -71,6 +70,9 @@ public:
 	UFUNCTION(Client, Reliable)
 	void Client_ShowAttackWarning(FVector WarnLocation, float Duration);
 	
+	UFUNCTION(Server, Reliable)
+	void Server_ConfirmArtifactChoice(int32 OfferId, int32 ChoiceId);
+
 	/** 공유 키 입력 핸들러 */
 	void OnSharePressed();
 	
@@ -94,9 +96,17 @@ protected:
 	UPROPERTY()
 	TObjectPtr<UUserWidget> ChooseWeaponWidget;
 	
+	UFUNCTION(Client, Reliable)
+	void Client_PresentArtifactOffer(const FKernelArtifactOffer& Offer);
+	
+	/** [서버] 원장에서 찾아 1회성으로 소비한다. 없으면 false */
+	bool ConsumeArtifactChoice(int32 OfferId, int32 ChoiceId, UKernelArtifactDefinition*& OutDef);
+
+	
 private:
 	/** [서버 전용] 아직 소비되지 않은 이 플레이어의 드롭들 */
 	TMap<int32, FKernelItemData> PendingDrops;
+	TArray<FKernelArtifactOffer> PendingOffers;
 	int32 NextDropId = 1;
 
 	bool ConsumeDrop(int32 InDropId, FKernelItemData& OutRoll);

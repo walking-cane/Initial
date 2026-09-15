@@ -135,6 +135,8 @@ void AKernelItemPickup::OnFocus(APawn* Pawn)
 {
 	if (!Pawn || !Pawn->IsLocallyControlled() || !SpawnMeshComp1) return;
 
+	OnEndFocus(Pawn);
+	
 	SpawnMeshComp1->SetCustomDepthStencilValue(GetStencilForRarity(Roll.Rarity));
 	SpawnMeshComp1->SetRenderCustomDepth(true);
 	

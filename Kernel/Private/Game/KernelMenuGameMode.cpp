@@ -1,15 +1,15 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 
-#include "Game/MenuGameMode.h"
+#include "Game/KernelMenuGameMode.h"
 #include "Blueprint/UserWidget.h"
 
-AMenuGameMode::AMenuGameMode()
+AKernelMenuGameMode::AKernelMenuGameMode()
 {
 	DefaultPawnClass = nullptr; // 메뉴에선 폰 불필요
 }
 
-void AMenuGameMode::BeginPlay()
+void AKernelMenuGameMode::BeginPlay()
 {
 	Super::BeginPlay();
 	

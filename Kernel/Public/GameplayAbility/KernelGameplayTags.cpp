@@ -45,5 +45,6 @@ UE_DEFINE_GAMEPLAY_TAG(TAG_UI_Warning,                  "UI.Warning")
 UE_DEFINE_GAMEPLAY_TAG(TAG_UI_ToggleLayout,             "UI.Action.ToggleLayout")
 UE_DEFINE_GAMEPLAY_TAG(TAG_UI_ToastMessage,             "UI.Action.ToastMessage")
 UE_DEFINE_GAMEPLAY_TAG(TAG_UI_RollAffix,                "UI.Action.RollAffix")
+UE_DEFINE_GAMEPLAY_TAG(TAG_Artifact_Message_Offered,    "Artifact.Offered")
 
 UE_DEFINE_GAMEPLAY_TAG(TAG_GameplayCue_Projectile,      "GameplayCue.Projectile")

@@ -3,6 +3,7 @@
 
 #include "KernelCharacter/KernelPlayerState.h"
 #include "AbilitySystemComponent.h"
+#include "Artifact/KernelArtifactComponent.h"
 #include "Game/KernelGameState.h"
 #include "Game/KernelMapDefinition.h"
 #include "GameFramework/GameplayMessageSubsystem.h"
@@ -36,6 +37,8 @@ AKernelPlayerState::AKernelPlayerState()
 	HealthSet = CreateDefaultSubobject<UKernelHealthAttributeSet>(TEXT("HealthSet"));
 	CombatSet = CreateDefaultSubobject<UKernelCombatAttributeSet>(TEXT("CombatSet"));
 	MoveSet   = CreateDefaultSubobject<UKernelMovementSet>("MoveSet");
+	
+	ArtifactComp = CreateDefaultSubobject<UKernelArtifactComponent>("ArtifactComp");
 }
 
 void AKernelPlayerState::SetCharacterDefinition(UKernelCharacterDefinition* InDef)

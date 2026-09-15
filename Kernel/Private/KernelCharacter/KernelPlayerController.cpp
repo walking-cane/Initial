@@ -6,6 +6,8 @@
 #include "Game/KernelSaveGame.h"
 #include "Interaction/KernelInteractionComponent.h"
 #include "Affixes/KernelAffixDefinition.h"
+#include "Artifact/KernelArtifactComponent.h"
+#include "Artifact/KernelArtifactTypes.h"
 #include "GameFramework/GameplayMessageSubsystem.h"
 #include "GameplayAbility/KernelGameplayTags.h"
 #include "Item/KernelItemBalanceSettings.h"
@@ -107,7 +109,6 @@ void AKernelPlayerController::Save_Dump()
 		UE_LOG(LogTemp, Warning, TEXT("[Save/PS] 서버 사본 확인 (PS: %s)"), *PS->GetPlayerName());
 	}
 }
-
 
 int32 AKernelPlayerController::GrantLocalDrop(const FKernelItemData& Roll, const FTransform& Xform)
 {
@@ -319,4 +320,69 @@ void AKernelPlayerController::Kernel_TestRoll(int32 Count)
 				*A.Affix->AffixId.ToString(), A.RolledChance * 100.f);
 		}
 	}
+}
+
+void AKernelPlayerController::OfferArtifacts(const FKernelArtifactOffer& Offer)
+{
+	if (!HasAuthority()) return;
+	if (Offer.Choices.Num() == 0) return;
+
+	UE_LOG(LogTemp,Log,TEXT("OfferArtifacts!"))
+	PendingOffers.Add(Offer);            // 원장 기록이 먼저
+	Client_PresentArtifactOffer(Offer);  // 그 다음 전송
+}
+
+void AKernelPlayerController::Client_PresentArtifactOffer_Implementation(const FKernelArtifactOffer& Offer)
+{
+	UE_LOG(LogTemp,Log,TEXT("Client_PresentArtifactOffer_Implementation"));
+	FKernelArtifactOfferMessage Msg;
+	Msg.Offer = Offer;
+
+	UGameplayMessageSubsystem::Get(this).BroadcastMessage(TAG_Artifact_Message_Offered, Msg);
+}
+
+bool AKernelPlayerController::ConsumeArtifactChoice(
+	int32 OfferId, int32 ChoiceId, UKernelArtifactDefinition*& OutDef)
+{
+	OutDef = nullptr;
+
+	const int32 OfferIndex = PendingOffers.IndexOfByPredicate(
+		[OfferId](const FKernelArtifactOffer& O) { return O.OfferId == OfferId; });
+
+	if (OfferIndex == INDEX_NONE) return false;
+
+	const FKernelArtifactChoice* Choice = PendingOffers[OfferIndex].Choices.FindByPredicate(
+		[ChoiceId](const FKernelArtifactChoice& C) { return C.ChoiceId == ChoiceId; });
+
+	if (!Choice || !Choice->Artifact) return false;
+
+	OutDef = Choice->Artifact;
+
+	// 하나를 고르면 그 제안 전체가 사라진다 — 나머지 선택지도 함께 무효
+	PendingOffers.RemoveAt(OfferIndex);
+	return true;
+}
+
+void AKernelPlayerController::Server_ConfirmArtifactChoice_Implementation(int32 OfferId, int32 ChoiceId)
+{
+	UKernelArtifactDefinition* Def = nullptr;
+	if (!ConsumeArtifactChoice(OfferId, ChoiceId, Def))
+	{
+		UE_LOG(LogTemp, Warning, TEXT("[PC] 유효하지 않은 아티팩트 선택 (Offer=%d, Choice=%d)"),
+			OfferId, ChoiceId);
+		return;
+	}
+
+	AKernelPlayerState* PS = GetPlayerState<AKernelPlayerState>();
+	if (!PS) return;
+
+	UKernelArtifactComponent* Comp = PS->FindComponentByClass<UKernelArtifactComponent>();
+	if (!Comp)
+	{
+		//PendingOffers.Add();   제안 복구 로직
+		return;
+	}
+
+	Comp->GrantArtifact(Def);
+	UE_LOG(LogTemp, Log, TEXT("[PC] Choice Confirmed"));
 }

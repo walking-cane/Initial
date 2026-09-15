@@ -4,17 +4,18 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/GameModeBase.h"
-#include "MenuGameMode.generated.h"
+#include "KernelMenuGameMode.generated.h"
 
 /**
  * 
  */
 UCLASS()
-class KERNEL_API AMenuGameMode : public AGameModeBase
+class KERNEL_API AKernelMenuGameMode : public AGameModeBase
 {
 	GENERATED_BODY()
+	
 public:
-	AMenuGameMode();
+	AKernelMenuGameMode();
 
 protected:
 	virtual void BeginPlay() override;

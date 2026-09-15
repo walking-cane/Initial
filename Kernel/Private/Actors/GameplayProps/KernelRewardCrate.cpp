@@ -4,8 +4,10 @@
 #include "Actors/GameplayProps/KernelRewardCrate.h"
 
 #include "Components/TimelineComponent.h"
+#include "Game/KernelGameModeBase.h"
 #include "GameFramework/GameplayMessageSubsystem.h"
 #include "GameplayAbility/KernelGameplayTags.h"
+#include "KernelCharacter/KernelPlayerState.h"
 #include "Net/UnrealNetwork.h"
 
 // Sets default values
@@ -38,7 +40,7 @@ void AKernelRewardCrate::BeginPlay()
 {
 	Super::BeginPlay();
 	
-	InitializeObject();
+	//InitializeObject();
 }
 
 // Called every frame
@@ -84,6 +86,17 @@ void AKernelRewardCrate::OnEndFocus(APawn* FocusingPawn)
 void AKernelRewardCrate::OnInteract(APawn* InteractingPawn)
 {
 	if (!InteractingPawn) return;
+	if (!HasAuthority()) return;
+	
+	AKernelPlayerState* KPS = Cast<AKernelPlayerState>(InteractingPawn->GetPlayerState());
+	if (!KPS) return;
+	
+	AKernelGameModeBase* KGM = Cast<AKernelGameModeBase>(GetWorld()->GetAuthGameMode());
+	if (KGM)
+	{
+		KGM->OfferArtifactsToPlayer(KPS, 3);
+		UE_LOG(LogTemp,Log,TEXT("[RewardCrate] Offer Artifact to InteractingPawn"))
+	}
 }
 
 FText AKernelRewardCrate::GetInteractName()
