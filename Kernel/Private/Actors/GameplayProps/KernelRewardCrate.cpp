@@ -91,12 +91,15 @@ void AKernelRewardCrate::OnInteract(APawn* InteractingPawn)
 	AKernelPlayerState* KPS = Cast<AKernelPlayerState>(InteractingPawn->GetPlayerState());
 	if (!KPS) return;
 	
-	AKernelGameModeBase* KGM = Cast<AKernelGameModeBase>(GetWorld()->GetAuthGameMode());
-	if (KGM)
+	if (AKernelGameModeBase* KGM = Cast<AKernelGameModeBase>(GetWorld()->GetAuthGameMode()))
 	{
 		KGM->OfferArtifactsToPlayer(KPS, 3);
 		UE_LOG(LogTemp,Log,TEXT("[RewardCrate] Offer Artifact to InteractingPawn"))
 	}
+	
+	ReverseDissolve();
+	SetLifeSpan(1.5f);
+	Destroy();
 }
 
 FText AKernelRewardCrate::GetInteractName()

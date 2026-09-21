@@ -43,7 +43,7 @@ AKernelPlayerState::AKernelPlayerState()
 
 void AKernelPlayerState::SetCharacterDefinition(UKernelCharacterDefinition* InDef)
 {
-	check(InDef);
+	ensure(InDef);
 	CharacterDefinition = InDef;
 }
 

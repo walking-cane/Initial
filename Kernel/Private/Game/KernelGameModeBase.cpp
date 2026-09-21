@@ -186,7 +186,6 @@ void AKernelGameModeBase::GatherPool(const UKernelArtifactPool* Pool,
         else
         {
 	        Out.Add(Entry);
-        	UE_LOG(LogTemp,Log,TEXT("Entry Added"));
         }
     }
 

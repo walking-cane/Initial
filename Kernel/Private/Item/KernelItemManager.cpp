@@ -43,7 +43,6 @@ UKernelEquipmentInstance* UKernelItemManager::EquipItem(UKernelItemInstance* Ite
 	if (!ItemInstance || GetOwner() == nullptr) return nullptr;
 
 	const UKernelItemFragment_Equippable* EquipFrag = ItemInstance->FindFragmentByClass<UKernelItemFragment_Equippable>();
-	const UKernelItemFragment_Cosmetic* CosmeticFrag = ItemInstance->FindFragmentByClass<UKernelItemFragment_Cosmetic>();
 
 	if (EquipFrag && EquipFrag->EquipmentClass)
 	{
@@ -51,7 +50,7 @@ UKernelEquipmentInstance* UKernelItemManager::EquipItem(UKernelItemInstance* Ite
 		NewEquip->InstigatorItem = ItemInstance;
 		
 		EquipmentList.Add(NewEquip);
-		AddReplicatedSubObject(NewEquip); // 등록을 OnEquipped 호출보다 먼저 해두는 게 안전합니다
+		AddReplicatedSubObject(NewEquip); // OnEquipped 호출 전에 Subobject 등록.
 
 		NewEquip->OnEquipped(GetOwner());
 		UE_LOG(LogTemp, Warning, TEXT("[ItemManager] Equipment Added"));

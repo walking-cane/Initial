@@ -10,7 +10,8 @@
 #include "Components/TextBlock.h"
 #include "KernelCharacter/KernelPlayerController.h"
 
-void UKernelArtifactEntryWidget::SetEntry(const UKernelArtifactDefinition* Def, int32 InOfferId, int32 InChoiceId)
+void UKernelArtifactEntryWidget::SetEntry(
+	const UKernelArtifactDefinition* Def, int32 InOfferId, int32 InChoiceId)
 {
 	if (!Def)
 	{
@@ -32,6 +33,16 @@ void UKernelArtifactEntryWidget::SetEntry(const UKernelArtifactDefinition* Def, 
 		Text->SetText(GetArtifactTypeText(Type));
 		FeatureTextBox->AddChild(Text);
 	}
+}
+
+void UKernelArtifactEntryWidget::OnPicked()
+{
+	PlayAnimation(PickedAnim);
+}
+
+void UKernelArtifactEntryWidget::OnUnPicked()
+{
+	PlayAnimation(UnPickedAnim);
 }
 
 void UKernelArtifactEntryWidget::NativeConstruct()
@@ -59,5 +70,7 @@ void UKernelArtifactEntryWidget::OnSelectClicked()
 		PC->SetInputMode(FInputModeUIOnly());
 		PC->SetShowMouseCursor(true);
 	}
+	
+	OnClickArtifactEntry.Broadcast(this);
+	UE_LOG(LogTemp,Warning,TEXT("[ArtifactEntry] Picked Index : %i"), EntryIndex);
 }
-

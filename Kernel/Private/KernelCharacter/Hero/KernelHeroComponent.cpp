@@ -71,9 +71,10 @@ void UKernelHeroComponent::InitializePlayerInput(UInputComponent* PlayerInputCom
 		
 		KernelIC->BindNativeAction(InputConfig,TAG_Input_WeaponSwap, ETriggerEvent::Started, this, &ThisClass::Input_SwapSlot,true);
 		KernelIC->BindNativeAction(InputConfig,TAG_Input_MouseLook, ETriggerEvent::Triggered, this, &ThisClass::Input_MouseLook,true);
-		KernelIC->BindNativeAction(InputConfig, TAG_Input_Move, ETriggerEvent::Triggered, this, &ThisClass::Input_Move, true);
+		KernelIC->BindNativeAction(InputConfig,TAG_Input_Move, ETriggerEvent::Triggered, this, &ThisClass::Input_Move, true);
 		KernelIC->BindNativeAction(InputConfig,TAG_Input_Inventory, ETriggerEvent::Started, this, &ThisClass::Input_Inventory,true);
-		KernelIC->BindNativeAction(InputConfig,TAG_Input_ScoreBoard, ETriggerEvent::Ongoing, this, &ThisClass::Input_ScoreBoard,true);
+		KernelIC->BindNativeAction(InputConfig,TAG_Input_ScoreBoard, ETriggerEvent::Started, this, &ThisClass::Input_ScoreBoard,true);
+		KernelIC->BindNativeAction(InputConfig,TAG_Input_ScoreBoard, ETriggerEvent::Completed, this, &ThisClass::Input_ScoreBoard,true);
 	}
 	else
 	{

@@ -4,7 +4,10 @@
 #include "Game/KernelGameState.h"
 
 #include "Game/KernelMapDefinition.h"
+#include "GameFramework/GameplayMessageSubsystem.h"
+#include "GameplayAbility/KernelGameplayTags.h"
 #include "KernelCharacter/KernelPlayerState.h"
+#include "Messages/KernelVerbMessage.h"
 #include "Net/UnrealNetwork.h"
 
 void AKernelGameState::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
@@ -89,7 +92,7 @@ void AKernelGameState::Kernel_TotalDamageDealt()
 {
 	if (PlayerArray.IsEmpty()) return;
 	
-	for (APlayerState* PS : PlayerArray)
+	for (APlayerState* PS : PlayerArray)  
 	{
 		AKernelPlayerState* KPS = Cast<AKernelPlayerState>(PS);
 		if (KPS)
@@ -102,4 +105,24 @@ void AKernelGameState::Kernel_TotalDamageDealt()
 void AKernelGameState::Multicast_MapPing_Implementation(const FString& PlayerName, int32 MapIndex)
 {
 	OnMapPing.Broadcast(PlayerName, MapIndex);
+}
+
+void AKernelGameState::AddPlayerState(APlayerState* PlayerState)
+{
+	Super::AddPlayerState(PlayerState);
+	BroadcastScoreboardDirty();
+}
+
+void AKernelGameState::RemovePlayerState(APlayerState* PlayerState)
+{
+	BroadcastScoreboardDirty();
+	Super::RemovePlayerState(PlayerState);
+}
+
+void AKernelGameState::BroadcastScoreboardDirty()
+{
+	if (!UGameplayMessageSubsystem::HasInstance(this)) return;
+	
+	UGameplayMessageSubsystem::Get(this).BroadcastMessage(
+		TAG_Scoreboard_Refresh, FKernelVerbMessage());
 }

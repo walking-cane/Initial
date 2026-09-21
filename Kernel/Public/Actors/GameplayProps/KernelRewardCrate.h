@@ -40,6 +40,9 @@ public:
 	UFUNCTION(BlueprintImplementableEvent)
 	void StartDissolve();
 	
+	UFUNCTION(BlueprintImplementableEvent)
+	void ReverseDissolve();
+	
 private:
 	UPROPERTY() FVector OriginLoc = FVector::ZeroVector;
 	float FloatTime = 0.f;

@@ -55,7 +55,10 @@ void AKernelHeroCharacter::PossessedBy(AController* NewController)
 			HealthComp->InitializeWithAbilitySystem(ASC);
 		}
 		
-		PS->SetCharacterDefinition(DefaultCharacterDefinition);
+		if (DefaultCharacterDefinition)
+		{
+			PS->SetCharacterDefinition(DefaultCharacterDefinition);
+		}
 		
 		if (PS->GetCharacterDefinition())
 		{

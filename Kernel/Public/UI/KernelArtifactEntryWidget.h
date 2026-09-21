@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "Artifact/KernelArtifactDefinition.h"
 #include "Blueprint/UserWidget.h"
+#include "Components/Button.h"
 #include "KernelArtifactEntryWidget.generated.h"
 
 class UButton;
@@ -14,9 +15,9 @@ struct FKernelArtifactOfferMessage;
 class UHorizontalBox;
 class UImage;
 class UVerticalBox;
-/**
- * 
- */
+
+DECLARE_MULTICAST_DELEGATE_OneParam(FOnClickArtifactEntry, UKernelArtifactEntryWidget*);
+
 UCLASS()
 class KERNEL_API UKernelArtifactEntryWidget : public UUserWidget
 {
@@ -24,6 +25,15 @@ class KERNEL_API UKernelArtifactEntryWidget : public UUserWidget
 	
 public:
 	void SetEntry(const UKernelArtifactDefinition* Def, int32 InOfferId, int32 InChoiceId);
+	
+	FOnClickArtifactEntry OnClickArtifactEntry;
+	
+	int32 EntryIndex = INDEX_NONE;
+	
+	void OnPicked();
+	void OnUnPicked();
+	
+	void SetSelectEnabled(bool bEnabled) { SelectButton->SetIsEnabled(bEnabled); }
 	
 protected:
 	virtual void NativeConstruct() override;
@@ -45,6 +55,11 @@ protected:
 	
 	UPROPERTY(meta = (BindWidget))
 	TObjectPtr<UButton> SelectButton;
+	
+	UPROPERTY(meta = (BindWidgetAnim), Transient)
+	TObjectPtr<UWidgetAnimation> PickedAnim;
+	UPROPERTY(meta = (BindWidgetAnim), Transient)
+	TObjectPtr<UWidgetAnimation> UnPickedAnim;
 	
 	FText GetArtifactTypeText(EKernelArtifactType Type)
 	{

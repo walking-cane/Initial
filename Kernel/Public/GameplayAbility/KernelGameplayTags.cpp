@@ -25,6 +25,8 @@ UE_DEFINE_GAMEPLAY_TAG(TAG_Input_Blocked,               "Status.Block.Input");
 UE_DEFINE_GAMEPLAY_TAG(TAG_Input_Inventory,             "InputTag.Inventory");
 UE_DEFINE_GAMEPLAY_TAG(TAG_Input_ScoreBoard,            "InputTag.ScoreBoard");
 
+UE_DEFINE_GAMEPLAY_TAG(TAG_Scoreboard_Refresh,          "Scoreboard.Refresh");
+
 UE_DEFINE_GAMEPLAY_TAG(TAG_GameplayCue_Movement_Slide,  "GameplayCue.Character.Crouch");
 
 UE_DEFINE_GAMEPLAY_TAG(TAG_Interact_OnFocus,            "Interact.OnFocus");

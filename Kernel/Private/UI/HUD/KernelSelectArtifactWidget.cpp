@@ -14,6 +14,15 @@ void UKernelSelectArtifactWidget::NativeConstruct()
 	
 	ListenerHandle = UGameplayMessageSubsystem::Get(this).RegisterListener(
 		TAG_Artifact_Message_Offered, this, &ThisClass::OfferArtifact);
+	
+	if (DestructAnim)
+	{
+		FWidgetAnimationDynamicEvent FinishedEvent;
+		FinishedEvent.BindDynamic(this, &UKernelSelectArtifactWidget::OnFadeOutFinished);
+		BindToAnimationFinished(DestructAnim, FinishedEvent);
+	}
+	
+	SetVisibility(ESlateVisibility::Collapsed);
 }
 
 void UKernelSelectArtifactWidget::NativeDestruct()
@@ -28,6 +37,7 @@ void UKernelSelectArtifactWidget::OfferArtifact(FGameplayTag Channel, const FKer
 	if (!ArtifactEntryBox || !ArtifactEntryClass) return;
 	
 	ArtifactEntryBox->ClearChildren();
+	UE_LOG(LogTemp,Warning,TEXT("[ArtifactWidget] try to add child"));
 	
 	for (const FKernelArtifactChoice& Choice : Message.Offer.Choices)
 	{
@@ -36,7 +46,12 @@ void UKernelSelectArtifactWidget::OfferArtifact(FGameplayTag Channel, const FKer
 		if (!Entry) continue;
 
 		Entry->SetEntry(Choice.Artifact, Message.Offer.OfferId, Choice.ChoiceId);
+		Entry->OnClickArtifactEntry.AddUObject(this, &ThisClass::OnArtifactClicked);
+		
+		AddEntryArray(Entry);
+		
 		ArtifactEntryBox->AddChild(Entry);
+		UE_LOG(LogTemp,Warning,TEXT("[ArtifactWidget] AddChild"));
 	}
 	
 	SetVisibility(ESlateVisibility::Visible);
@@ -46,4 +61,39 @@ void UKernelSelectArtifactWidget::OfferArtifact(FGameplayTag Channel, const FKer
 		PC->SetInputMode(FInputModeUIOnly());
 		PC->SetShowMouseCursor(true);
 	}
+	
+	PlayAnimation(ConstructAnim);
+}
+
+void UKernelSelectArtifactWidget::OnArtifactClicked(UKernelArtifactEntryWidget* Clicked)
+{
+	for (UKernelArtifactEntryWidget* Entry : EntryArray)
+	{
+		if (!Entry) continue;
+
+		if (Entry == Clicked) { Entry->OnPicked(); }
+		else                  { Entry->OnUnPicked(); }
+
+		Entry->SetSelectEnabled(false);   // 중복 클릭 방지 — 아래 설명
+	}
+	
+	if (APlayerController* PC = GetOwningPlayer())
+	{
+		PC->SetInputMode(FInputModeGameOnly());
+		PC->SetShowMouseCursor(false);
+	}
+	
+	PlayAnimation(DestructAnim);
+}
+
+void UKernelSelectArtifactWidget::AddEntryArray(UKernelArtifactEntryWidget* Entry)
+{
+	EntryArray.Add(Entry);
+}
+
+void UKernelSelectArtifactWidget::OnFadeOutFinished()
+{
+	ArtifactEntryBox->ClearChildren();
+	EntryArray.Reset();
+	SetVisibility(ESlateVisibility::Collapsed);
 }

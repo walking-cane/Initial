@@ -29,8 +29,22 @@ protected:
 	UPROPERTY(meta = (BindWidget))
 	TObjectPtr<UHorizontalBox> ArtifactEntryBox;
 	
+	UPROPERTY(meta = (BindWidgetAnim), Transient)
+	TObjectPtr<UWidgetAnimation> ConstructAnim;
+	UPROPERTY(meta = (BindWidgetAnim), Transient)
+	TObjectPtr<UWidgetAnimation> DestructAnim;
+	
+	UPROPERTY()
+	TArray<UKernelArtifactEntryWidget*> EntryArray;
+	
+	UFUNCTION()
+	void OnFadeOutFinished();
+	
 	void OfferArtifact(FGameplayTag Channel, const FKernelArtifactOfferMessage& Message);
 
 private:
 	FGameplayMessageListenerHandle ListenerHandle;
+	
+	void OnArtifactClicked(UKernelArtifactEntryWidget* Clicked);
+	void AddEntryArray(UKernelArtifactEntryWidget* Entry);
 };

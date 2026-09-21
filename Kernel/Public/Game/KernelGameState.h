@@ -29,6 +29,9 @@ class KERNEL_API AKernelGameState : public AGameStateBase
 	GENERATED_BODY()
 	
 public:
+	virtual void AddPlayerState(APlayerState* PlayerState) override;
+	virtual void RemovePlayerState(APlayerState* PlayerState) override;
+	
 	EKernelGamePhase GetGamePhase() const { return GamePhase; }
 	const TArray<TObjectPtr<UKernelCharacterDefinition>>& GetCharacterRoster() const { return CharacterRoster; }
 
@@ -82,4 +85,5 @@ protected:
 	
 private:
 	UFUNCTION(exec) void Kernel_TotalDamageDealt();
+	void BroadcastScoreboardDirty();
 };
