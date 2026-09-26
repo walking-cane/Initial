@@ -14,6 +14,6 @@ protected:
 	void SpawnTracer(const FVector& TargetPoint);
 	
 public:
-	void InputReleased(FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo,
+	virtual void InputReleased(FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo,
 	                   FGameplayAbilityActivationInfo ActivationInfo) override;
 };

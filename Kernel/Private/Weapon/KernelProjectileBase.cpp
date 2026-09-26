@@ -110,6 +110,8 @@ void AKernelProjectileBase::HandleHit(const FHitResult& Hit)
 	UE_LOG(LogTemp, Warning, TEXT("HandleHit"))
 	if (DamageSpec.IsValid())
 	{
+		UAbilitySystemComponent* TargetASC = nullptr;
+		
 		DamageSpec.Data->GetContext().AddHitResult(Hit);
 
 		if (ExplosionRadius > 0.f)
@@ -125,28 +127,28 @@ void AKernelProjectileBase::HandleHit(const FHitResult& Hit)
 				if (!Target || DamagedActor.Contains(Target)) continue;
 				DamagedActor.Add(Target);
 
-				if (UAbilitySystemComponent* TargetASC = UAbilitySystemBlueprintLibrary::GetAbilitySystemComponent(Target))
+				if (Target)
 				{
-					if (TargetASC->HasMatchingGameplayTag(TAG_Status_Death_Dying)) return;
-					TargetASC->ApplyGameplayEffectSpecToSelf(*DamageSpec.Data.Get());
-					UKernelAffixCombatLibrary::ApplyAffixOnHit(CachedASC, TargetASC, SourceWeapon, Hit);
+					TargetASC = UAbilitySystemBlueprintLibrary::GetAbilitySystemComponent(Target);
 				}
 			}
 		}
-		else if (UAbilitySystemComponent* TargetASC = UAbilitySystemBlueprintLibrary::GetAbilitySystemComponent(Hit.GetActor()))
+		else if (Hit.GetActor())
 		{
-			if (TargetASC->HasMatchingGameplayTag(TAG_Status_Death_Dying)) return;
-			TargetASC->ApplyGameplayEffectSpecToSelf(*DamageSpec.Data.Get());
-			UKernelAffixCombatLibrary::ApplyAffixOnHit(CachedASC, TargetASC, SourceWeapon, Hit);
+			TargetASC = UAbilitySystemBlueprintLibrary::GetAbilitySystemComponent(Hit.GetActor());
 		}
+		
+		if (TargetASC == nullptr) return;
+		if (TargetASC->HasMatchingGameplayTag(TAG_Status_Death_Dying)) return;
+		
+		TargetASC->ApplyGameplayEffectSpecToSelf(*DamageSpec.Data.Get());
+		UKernelAffixCombatLibrary::ApplyAffixOnHit(CachedASC, TargetASC, SourceWeapon, Hit);
+		
+		FGameplayCueParameters P;
+		P.Location = Hit.Location;
+		TargetASC->ExecuteGameplayCue(TAG_GameplayCue_Hit_Health, P);
 	}
 	
-	Client_PlayImpact_Implementation(ImpactFX, Hit.ImpactPoint, Hit.ImpactNormal);
+	SetLifeSpan(0.1f);
 	Destroy();
-}
-
-void AKernelProjectileBase::Client_PlayImpact_Implementation(UNiagaraSystem* Impact, const FVector_NetQuantize& Location,
-	const FVector_NetQuantizeNormal& Normal)
-{
-	
 }

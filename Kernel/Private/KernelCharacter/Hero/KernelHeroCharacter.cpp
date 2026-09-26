@@ -130,6 +130,24 @@ bool AKernelHeroCharacter::CanJumpInternal_Implementation() const
 	return JumpIsAllowedInternal();
 }
 
+void AKernelHeroCharacter::Jump()
+{
+	Super::Jump();
+	if (UKernelCharacterMovementComponent* CMC = Cast<UKernelCharacterMovementComponent>(GetCharacterMovement()))
+	{
+		CMC->bWantsToClimb = true;
+	}
+}
+
+void AKernelHeroCharacter::StopJumping()
+{
+	Super::StopJumping();
+	if (UKernelCharacterMovementComponent* CMC = Cast<UKernelCharacterMovementComponent>(GetCharacterMovement()))
+	{
+		CMC->bWantsToClimb = false;
+	}
+}
+
 void AKernelHeroCharacter::OnDeath1P(UAnimMontage* DeathMontage1P)
 {
 	if (UAnimInstance* Anim1P = GetMesh1P()->GetAnimInstance())

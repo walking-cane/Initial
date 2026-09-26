@@ -44,7 +44,6 @@ protected:
 	UPROPERTY(VisibleAnywhere, Category = "WeaponInfo") TObjectPtr<UCurveVector> RecoilCurve;
 	UPROPERTY(VisibleAnywhere, Category = "WeaponInfo") float FireDelay;
 	UPROPERTY(VisibleAnywhere, Category = "WeaponInfo") float Damage;
-	UPROPERTY(EditDefaultsOnly) FGameplayTag FireCueTag;
 	UPROPERTY(EditDefaultsOnly) float FireSpeed = 1000.f;
 	
 	// Caching Properties

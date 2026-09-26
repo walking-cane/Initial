@@ -363,6 +363,16 @@ bool AKernelPlayerController::ConsumeArtifactChoice(
 	return true;
 }
 
+void AKernelPlayerController::CallToastMessage(FText Text, bool IsWarning)
+{
+	FKernelToastMessage Message;
+	Message.ToastMessage = Text;
+	Message.IsWarning = IsWarning;
+	
+	UGameplayMessageSubsystem::Get(this).BroadcastMessage(
+		TAG_UI_ToastMessage, Message);
+}
+
 void AKernelPlayerController::Server_ConfirmArtifactChoice_Implementation(int32 OfferId, int32 ChoiceId)
 {
 	UKernelArtifactDefinition* Def = nullptr;

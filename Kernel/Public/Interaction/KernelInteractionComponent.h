@@ -39,4 +39,7 @@ private:
 	
 	void TryBindToGameState();
 	void HandleGamePhase(EKernelGamePhase Phase);
+	
+	UPROPERTY(EditAnywhere)
+	float TraceDistance = 150.f;
 };

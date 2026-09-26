@@ -102,6 +102,8 @@ protected:
 	/** [서버] 원장에서 찾아 1회성으로 소비한다. 없으면 false */
 	bool ConsumeArtifactChoice(int32 OfferId, int32 ChoiceId, UKernelArtifactDefinition*& OutDef);
 
+	UFUNCTION(BlueprintCallable)
+	void CallToastMessage(FText Text, bool IsWarning);
 	
 private:
 	/** [서버 전용] 아직 소비되지 않은 이 플레이어의 드롭들 */

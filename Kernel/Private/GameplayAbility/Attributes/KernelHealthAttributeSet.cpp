@@ -36,6 +36,25 @@ bool UKernelHealthAttributeSet::PreGameplayEffectExecute(struct FGameplayEffectM
 			Data.EvaluatedData.Magnitude = 0.f;
 			return false;
 		}
+		
+		/* Parry system
+		if (Data.Target.HasMatchingGameplayTag(TAG_Status_Parrying))
+		{
+			UE_LOG(LogTemp,Warning,TEXT("ExecCalc :: Parry Succeeded!"))
+  		
+			FGameplayEventData ParryPayload;
+			ParryPayload.Instigator = Data.Target.GetAvatarActor();
+			TargetASC->HandleGameplayEvent(
+				TAG_GameplayEvent_Parry_Success, &ParryPayload);
+
+			FGameplayEventData StunPayload;
+			StunPayload.Target = Data.->GetAvatarActor();
+			SourceASC->HandleGameplayEvent(
+				TAG_GameplayEvent_Parry_Parried, &StunPayload);
+
+			return;
+		}
+		*/
 	}
 	
 	HealthBeforeAttributeChange = GetHealth();
@@ -67,12 +86,7 @@ void UKernelHealthAttributeSet::PostGameplayEffectExecute(const FGameplayEffectM
 			Message.Magnitude = Data.EvaluatedData.Magnitude;
 
 			UGameplayMessageSubsystem& MessageSystem = UGameplayMessageSubsystem::Get(GetWorld());
-			MessageSystem.BroadcastMessage(Message.Verb, Message);
-			
-			/*
-			UE_LOG(LogTemp, Warning, TEXT("[DamageMsg] Broadcast (Causer : %s) Target=%s Dmg=%f"),
-			*GetNameSafe(Message.Instigator), *GetNameSafe(Message.Target), Message.Magnitude);
-			*/
+			MessageSystem.BroadcastMessage(Message.Verb, Message); 
 	
 			// 최종 데미지값(랜덤 적용 완료)으로 DamagePop 큐를 쏜다.
 			if (UAbilitySystemComponent* TargetASC = GetOwningAbilitySystemComponent())
@@ -81,7 +95,7 @@ void UKernelHealthAttributeSet::PostGameplayEffectExecute(const FGameplayEffectM
 				Data.EffectSpec.GetAllAssetTags(AssetTags);
 				
 				FGameplayCueParameters PopParams;
-				PopParams.RawMagnitude = Data.EvaluatedData.Magnitude; // ← 진짜 최종 데미지
+				PopParams.RawMagnitude = Data.EvaluatedData.Magnitude; // 진짜 최종 데미지
 				PopParams.Location = GetOwningActor()->GetActorLocation();
 				PopParams.EffectContext = Data.EffectSpec.GetEffectContext();
 				PopParams.EffectCauser = Causer; // 색상 판별용 (아바타 폰)

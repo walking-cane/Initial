@@ -32,10 +32,14 @@ public:
 	virtual void SetupPlayerInputComponent(UInputComponent* PlayerInputComponent) override;
 	virtual void BeginPlay() override;
 	
+	virtual void Jump() override;
+	virtual void StopJumping() override;
+	
 	virtual void Tick(float DeltaSeconds) override;
 
 	virtual UAbilitySystemComponent* GetAbilitySystemComponent() const override;
 	
+	UFUNCTION(BlueprintPure)
 	virtual USkeletalMeshComponent* GetMesh1P() override { return FirstPersonMesh1; }
 	virtual USkeletalMeshComponent* GetMesh3P() override { return GetMesh(); }
 

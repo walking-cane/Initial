@@ -11,6 +11,34 @@ class UAbilitySystemComponent;
 
 DECLARE_MULTICAST_DELEGATE_OneParam(FOnSlideStateChanged, bool /*bIsSliding*/);
 
+class FSavedMove_Kernel : public FSavedMove_Character
+{
+public:
+	typedef FSavedMove_Character Super;
+
+	uint8 bSavedWantsToClimb : 1;
+
+	virtual void Clear() override;
+	virtual uint8 GetCompressedFlags() const override;
+	virtual bool CanCombineWith(const FSavedMovePtr& NewMove, ACharacter* Character, float MaxDelta) const override;
+	virtual void SetMoveFor(ACharacter* C, float InDeltaTime, FVector const& NewAccel,
+							FNetworkPredictionData_Client_Character& ClientData) override;
+	virtual void PrepMoveFor(ACharacter* C) override;
+};
+
+class FNetworkPredictionData_Client_Kernel : public FNetworkPredictionData_Client_Character
+{
+public:
+	typedef FNetworkPredictionData_Client_Character Super;
+	FNetworkPredictionData_Client_Kernel(const UCharacterMovementComponent& ClientMovement)
+		: Super(ClientMovement) {}
+
+	virtual FSavedMovePtr AllocateNewMove() override
+	{
+		return FSavedMovePtr(new FSavedMove_Kernel());
+	}
+};
+
 UCLASS()
 class UKernelCharacterMovementComponent : public UCharacterMovementComponent
 {
@@ -26,6 +54,8 @@ public:
 	virtual bool CanAttemptJump() const override;
 	virtual bool CanCrouchInCurrentState() const override;
 	virtual float GetMaxBrakingDeceleration() const override;
+	virtual void UpdateCharacterStateBeforeMovement(float DeltaSeconds) override;
+	virtual FNetworkPredictionData_Client* GetPredictionData_Client() const override;
 	
 	virtual void Crouch(bool bClientSimulation = false) override;
 	virtual void UnCrouch(bool bClientSimulation = false) override;
@@ -41,9 +71,22 @@ public:
 	
 	FOnSlideStateChanged OnSlideStateChanged;
 	
+	uint8 bWantsToClimb : 1;
+	
 protected:
 	virtual void OnMovementModeChanged(EMovementMode PreviousMovementMode, uint8 PreviousCustomMode) override;
 	virtual void SetPostLandedPhysics(const FHitResult& Hit) override;
+	virtual void UpdateFromCompressedFlags(uint8 Flags) override;
+
+	float GetHeightAboveGround() const;
+	
+	bool FindClimbWall(FHitResult& OutHit) const;
+	bool FindLedge(FVector& OutTop) const;
+	bool HasRoomToStand(const FVector& Top) const;
+
+	void PhysClimb(float DeltaTime, int32 Iterations);
+	void PhysMantle(float DeltaTime, int32 Iterations);
+	void StartMantle(const FVector& Top);
 	
 	virtual void PhysCustom(float deltaTime, int32 Iterations) override;
 	void PhysSlide(float deltaTime, int32 Iterations);
@@ -78,6 +121,22 @@ protected:
 	UPROPERTY(EditDefaultsOnly, Category = "Slide")
 	float SlideBoostCooldown = 0.8f;   // 이 시간 안에 재진입하면 부스트 없음
 	
+	//Climb & Parkour
+	UPROPERTY(EditDefaultsOnly, Category = "Climb")
+	float ClimbSpeed = 250.f;
+	UPROPERTY(EditDefaultsOnly, Category = "Climb")
+	float ClimbReach = 60.f;       // 벽 감지 거리
+	UPROPERTY(EditDefaultsOnly, Category = "Climb")
+	float WallStickDistance = 35.f; // 벽과 유지할 거리
+	UPROPERTY(EditDefaultsOnly, Category = "Climb")
+	float MaxClimbTime = 2.5f;     // 무한 등반 방지
+	UPROPERTY(EditDefaultsOnly, Category = "Climb")
+	float MantleDuration = 0.4f;
+	UPROPERTY(EditDefaultsOnly, Category = "Climb")
+	float MinClimbHeight = 80.f;
+	UPROPERTY(EditDefaultsOnly, Category = "Climb")
+	float GroundProbeDistance = 500.f;
+	
 	float RetainedMomentum = 0.f;
 	
 private:
@@ -88,4 +147,9 @@ private:
 	void CompensateCameraForRootMove(float PreRootZ);
 	
 	FTimerHandle ASCTimerHandle;
+	
+	float ClimbElapsed = 0.f;
+	FVector MantleStart;
+	FVector MantleTarget;
+	float MantleElapsed = 0.f;
 };

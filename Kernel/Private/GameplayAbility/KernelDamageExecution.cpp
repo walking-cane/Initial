@@ -15,7 +15,6 @@
 	UAbilitySystemComponent* SourceASC = ExecutionParams.GetSourceAbilitySystemComponent();
   	
   	if (!TargetASC || !SourceASC) return;
-  //	UE_LOG(LogTemp,Warning,TEXT("ExecCalc :: Damage Received"))
 
 	FGameplayTagContainer TargetTags;
 	TargetASC->GetOwnedGameplayTags(TargetTags);
@@ -24,25 +23,6 @@
   		TAG_Gameplay_Damage, 
 		false, 
 		0.f);
-  	
-  	/** TODO : Move to AttributSet. ExecCalc must have only Calculate. */
-  	
-  	if (TargetTags.HasTag(TAG_Status_Parrying))
-  	{
-  		UE_LOG(LogTemp,Warning,TEXT("ExecCalc :: Parry Succeeded!"))
-  		
-  		FGameplayEventData ParryPayload;
-  		ParryPayload.Instigator = SourceASC->GetAvatarActor();
-  		TargetASC->HandleGameplayEvent(
-			  TAG_GameplayEvent_Parry_Success, &ParryPayload);
-
-  		FGameplayEventData StunPayload;
-  		StunPayload.Target = TargetASC->GetAvatarActor();
-  		SourceASC->HandleGameplayEvent(
-			  TAG_GameplayEvent_Parry_Parried, &StunPayload);
-
-  		return;
-  	}
   	
   	// Damage Calculate logic.
 	if (BaseDamage > 0.f)

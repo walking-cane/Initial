@@ -7,5 +7,7 @@ enum class EKernelCustomMovementMode : uint8
 {
 	None   = 0,
 	Slide  = 1,
+	Climb  = 2,
+	Mantle = 3,
 };
 

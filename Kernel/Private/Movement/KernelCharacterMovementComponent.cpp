@@ -3,12 +3,68 @@
 
 #include "Movement/KernelCharacterMovementComponent.h"
 
+#include "Components/CapsuleComponent.h"
 #include "GameFramework/Character.h"
 #include "GameFramework/PhysicsVolume.h"
 #include "GameplayAbility/KernelGameplayTags.h"
 #include "GameplayAbility/Attributes/KernelCombatAttributeSet.h"
 #include "GameplayAbility/Attributes/KernelMovementSet.h"
 #include "KernelCharacter/Hero/KernelHeroCharacter.h"
+
+void FSavedMove_Kernel::Clear()
+{
+	Super::Clear();
+	bSavedWantsToClimb = false;
+}
+
+uint8 FSavedMove_Kernel::GetCompressedFlags() const
+{
+	uint8 Result = Super::GetCompressedFlags();
+	if (bSavedWantsToClimb) { Result |= FLAG_Custom_0; }
+	return Result;
+}
+
+bool FSavedMove_Kernel::CanCombineWith(const FSavedMovePtr& NewMove, ACharacter* Character, float MaxDelta) const
+{
+	const FSavedMove_Kernel* Other = static_cast<const FSavedMove_Kernel*>(NewMove.Get());
+	if (bSavedWantsToClimb != Other->bSavedWantsToClimb) return false;   // 상태가 다르면 병합 금지
+	return Super::CanCombineWith(NewMove, Character, MaxDelta);
+}
+
+void FSavedMove_Kernel::SetMoveFor(ACharacter* C, float InDeltaTime, FVector const& NewAccel,
+								   FNetworkPredictionData_Client_Character& ClientData)
+{
+	Super::SetMoveFor(C, InDeltaTime, NewAccel, ClientData);
+	if (const UKernelCharacterMovementComponent* CMC = Cast<UKernelCharacterMovementComponent>(C->GetCharacterMovement()))
+	{
+		bSavedWantsToClimb = CMC->bWantsToClimb;   // 저장
+	}
+}
+
+void FSavedMove_Kernel::PrepMoveFor(ACharacter* C)
+{
+	Super::PrepMoveFor(C);
+	if (UKernelCharacterMovementComponent* CMC = Cast<UKernelCharacterMovementComponent>(C->GetCharacterMovement()))
+	{
+		CMC->bWantsToClimb = bSavedWantsToClimb;   // 재생 시 복원
+	}
+}
+
+FNetworkPredictionData_Client* UKernelCharacterMovementComponent::GetPredictionData_Client() const
+{
+	if (!ClientPredictionData)
+	{
+		UKernelCharacterMovementComponent* MutableThis = const_cast<UKernelCharacterMovementComponent*>(this);
+		MutableThis->ClientPredictionData = new FNetworkPredictionData_Client_Kernel(*this);
+	}
+	return ClientPredictionData;
+}
+
+void UKernelCharacterMovementComponent::UpdateFromCompressedFlags(uint8 Flags)
+{
+	Super::UpdateFromCompressedFlags(Flags);
+	bWantsToClimb = (Flags & FSavedMove_Character::FLAG_Custom_0) != 0;   // 서버가 받음
+}
 
 void UKernelCharacterMovementComponent::InitializeASC(UAbilitySystemComponent* InASC)
 {
@@ -23,9 +79,12 @@ void UKernelCharacterMovementComponent::TickComponent(float DeltaTime, enum ELev
 	// For Debug
 	GEngine->AddOnScreenDebugMessage(
 		-1, 
-		-1, 
+		0.f, 
 		FColor::White, 
 		FString::Printf(TEXT("Speed : %f"), Velocity.Size()));
+	
+	GEngine->AddOnScreenDebugMessage(1, 0.f, FColor::Yellow,
+	   FString::Printf(TEXT("WantsClimb=%d Height=%.0f"), bWantsToClimb ? 1 : 0, GetHeightAboveGround()));
 }
 
 float UKernelCharacterMovementComponent::GetMaxSpeed() const
@@ -90,10 +149,16 @@ void UKernelCharacterMovementComponent::OnMovementModeChanged(EMovementMode Prev
 {
 	Super::OnMovementModeChanged(PreviousMovementMode, PreviousCustomMode);
 
-	const bool bWasSliding = (PreviousMovementMode == MOVE_Custom
-		&& PreviousCustomMode == static_cast<uint8>(EKernelCustomMovementMode::Slide));
-
-	// ===== 슬라이드 이탈 =====
+	const bool bWasSliding = 
+		(PreviousMovementMode == MOVE_Custom && 
+		(PreviousCustomMode == static_cast<uint8>(EKernelCustomMovementMode::Slide)));
+	
+	// for climbing
+	const bool bWasClimbing = 
+		(PreviousCustomMode == MOVE_Custom && 
+		(PreviousCustomMode == static_cast<uint8>(EKernelCustomMovementMode::Climb) || 
+		(PreviousCustomMode == static_cast<uint8>(EKernelCustomMovementMode::Mantle))));
+	
 	if (bWasSliding)
 	{
 		bOrientRotationToMovement = true;
@@ -112,7 +177,6 @@ void UKernelCharacterMovementComponent::OnMovementModeChanged(EMovementMode Prev
 		}
 	}
 
-	// ===== 슬라이드 진입 =====
 	if (IsCustomMovementMode(EKernelCustomMovementMode::Slide))
 	{
 		const bool bFromSlideJump = (RetainedMomentum > 0.f);
@@ -120,7 +184,6 @@ void UKernelCharacterMovementComponent::OnMovementModeChanged(EMovementMode Prev
 		const float Now = GetWorld() ? GetWorld()->GetTimeSeconds() : 0.f;
 		const bool bOnCooldown = (Now - LastSlideEndTime) < SlideBoostCooldown;
 
-		// 슬라이드 점프 착지거나 쿨다운 중이면 현재 속도를 그대로 쓴다
 		const bool bAllowBoost = !bFromSlideJump && !bOnCooldown;
 
 		bCrouchMaintainsBaseLocation = true;
@@ -145,7 +208,6 @@ void UKernelCharacterMovementComponent::OnMovementModeChanged(EMovementMode Prev
 		OnSlideStateChanged.Broadcast(true);
 	}
 
-	// ===== 걷기 착지 =====
 	if (MovementMode == MOVE_Walking)
 	{
 		RetainedMomentum = 0.f;
@@ -158,12 +220,11 @@ void UKernelCharacterMovementComponent::PhysCustom(float deltaTime, int32 Iterat
 
 	switch (static_cast<EKernelCustomMovementMode>(CustomMovementMode))
 	{
-	case EKernelCustomMovementMode::Slide:
-		PhysSlide(deltaTime, Iterations);
-		break;
-
+	case EKernelCustomMovementMode::Slide:  PhysSlide(deltaTime, Iterations);  break;
+	case EKernelCustomMovementMode::Climb:  PhysClimb(deltaTime, Iterations);  break;
+	case EKernelCustomMovementMode::Mantle: PhysMantle(deltaTime, Iterations); break;
+    
 	default:
-		// 모르는 모드로 들어오면 안전하게 복귀
 		SetMovementMode(MOVE_Walking);
 		break;
 	}
@@ -176,8 +237,6 @@ bool UKernelCharacterMovementComponent::CanAttemptJump() const
 
 bool UKernelCharacterMovementComponent::CanCrouchInCurrentState() const
 {
-	// 공중에서는 캡슐을 펴둔다. bWantsToCrouch는 그대로 유지되므로
-	// 착지하면 다시 앉고, 속도가 충분하면 슬라이드로 이어진다.
 	if (IsFalling())
 	{
 		return false;
@@ -305,13 +364,10 @@ bool UKernelCharacterMovementComponent::CanStartSlideOnLanded() const
 {
 	if (!CharacterOwner) { return false; }
 
-	// 앉기 키를 누르고 있다는 신호. GA_Crouch가 Char->Crouch()로 세워둔 값이다.
 	if (!bWantsToCrouch) { return false; }
 
-	// 물속 착지는 엔진 기본 처리(수영)에 맡긴다
 	if (GetPhysicsVolume() && GetPhysicsVolume()->bWaterVolume) { return false; }
 
-	// 수평 속도만 본다. 낙하 Z속도로 슬라이드가 발동되면 안 된다.
 	return Velocity.Size2D() >= SlideLandEnterSpeed;
 }
 
@@ -325,6 +381,191 @@ void UKernelCharacterMovementComponent::SetPostLandedPhysics(const FHitResult& H
 
 	Super::SetPostLandedPhysics(Hit);
 }
+
+void UKernelCharacterMovementComponent::UpdateCharacterStateBeforeMovement(float DeltaSeconds)
+{
+	Super::UpdateCharacterStateBeforeMovement(DeltaSeconds);
+	
+	if (!IsFalling() || !bWantsToClimb) return;
+	if (GetHeightAboveGround() < MinClimbHeight) return;
+    
+	FHitResult Wall;
+	if (!FindClimbWall(Wall)) return;
+
+	ClimbElapsed = 0.f;
+	SetMovementMode(MOVE_Custom, static_cast<uint8>(EKernelCustomMovementMode::Climb));
+}
+
+float UKernelCharacterMovementComponent::GetHeightAboveGround() const
+{
+	const float HalfH = CharacterOwner->GetCapsuleComponent()->GetScaledCapsuleHalfHeight();
+	const FVector Feet = UpdatedComponent->GetComponentLocation() - FVector(0.f, 0.f, HalfH);
+
+	FCollisionQueryParams Params;
+	Params.AddIgnoredActor(CharacterOwner);
+
+	FHitResult Hit;
+	if (GetWorld()->LineTraceSingleByChannel(Hit, Feet, Feet - FVector(0.f, 0.f, GroundProbeDistance),
+			ECC_Visibility, Params))
+	{
+		return Hit.Distance;
+	}
+	return GroundProbeDistance;
+}
+
+bool UKernelCharacterMovementComponent::FindClimbWall(FHitResult& OutHit) const
+{
+	UE_LOG(LogTemp,Warning,TEXT("Find Wall"))
+	const float HalfH = CharacterOwner->GetCapsuleComponent()->GetScaledCapsuleHalfHeight();
+	const FVector Fwd = UpdatedComponent->GetForwardVector();
+	const FVector Start = UpdatedComponent->GetComponentLocation() + FVector(0.f, 0.f, HalfH * 0.3f);
+	const FVector End = Start + Fwd * ClimbReach;
+	
+	FCollisionQueryParams Params;
+	Params.AddIgnoredActor(CharacterOwner);
+
+	bool bTrace = GetWorld()->SweepSingleByChannel(OutHit, Start, End, FQuat::Identity,
+			ECC_GameTraceChannel3, FCollisionShape::MakeSphere(20.f), Params);
+	if (!bTrace)
+	{
+		return false;
+	}
+	
+	/* Debug
+	bTrace ? DrawDebugLine(GetWorld(), Start, End, FColor::Red, false, 3.f) :
+			 DrawDebugLine(GetWorld(), Start, End, FColor::Green, false, 3.f);
+	*/
+
+	// 벽을 정면으로 보고 있을 때만
+	return FVector::DotProduct(-OutHit.ImpactNormal, Fwd) > 0.7f;
+}
+
+bool UKernelCharacterMovementComponent::FindLedge(FVector& OutTop) const
+{
+	const float HalfH = CharacterOwner->GetCapsuleComponent()->GetScaledCapsuleHalfHeight();
+	const FVector Fwd = UpdatedComponent->GetForwardVector();
+	const FVector Head = UpdatedComponent->GetComponentLocation() + FVector(0.f, 0.f, HalfH);
+
+	FCollisionQueryParams Params;
+	Params.AddIgnoredActor(CharacterOwner);
+
+	// 1) 머리 앞에 벽이 아직 있으면 → 아직 난간 아님
+	FHitResult HeadHit;
+	if (GetWorld()->LineTraceSingleByChannel(HeadHit, Head, Head + Fwd * ClimbReach, ECC_GameTraceChannel3, Params))
+	{
+		return false;
+	}
+
+	// 2) 벽 너머 위쪽에서 아래로 → 윗면 찾기
+	const FVector DownStart = Head + Fwd * (ClimbReach + 20.f) + FVector(0.f, 0.f, 60.f);
+	const FVector DownEnd   = DownStart - FVector(0.f, 0.f, 140.f);
+
+	FHitResult TopHit;
+	if (!GetWorld()->LineTraceSingleByChannel(TopHit, DownStart, DownEnd, ECC_Visibility, Params))
+	{
+		return false;
+	}
+
+	if (TopHit.ImpactNormal.Z < 0.7f) return false;   // 경사가 심하면 못 올라섬
+
+	OutTop = TopHit.ImpactPoint;
+	return true;
+}
+
+bool UKernelCharacterMovementComponent::HasRoomToStand(const FVector& Top) const
+{
+	const UCapsuleComponent* Cap = CharacterOwner->GetCapsuleComponent();
+	const FVector Center = Top + FVector(0.f, 0.f, Cap->GetScaledCapsuleHalfHeight() + 2.f);
+
+	FCollisionQueryParams Params;
+	Params.AddIgnoredActor(CharacterOwner);
+
+	return !GetWorld()->OverlapAnyTestByChannel(
+		Center, FQuat::Identity, ECC_Pawn, Cap->GetCollisionShape(), Params);
+}
+
+void UKernelCharacterMovementComponent::PhysClimb(float DeltaTime, int32 Iterations)
+{
+	if (DeltaTime < MIN_TICK_TIME) return;
+
+	ClimbElapsed += DeltaTime;
+
+	const bool bHeld = bWantsToClimb;
+	if (!bHeld || ClimbElapsed > MaxClimbTime)
+	{
+		SetMovementMode(MOVE_Falling);
+		StartNewPhysics(DeltaTime, Iterations);
+		return;
+	}
+
+	// 난간에 도달 → 올라서기
+	FVector LedgeTop;
+	if (FindLedge(LedgeTop) && HasRoomToStand(LedgeTop))
+	{
+		StartMantle(LedgeTop);
+		return;
+	}
+
+	// 벽이 사라짐 → 낙하
+	FHitResult Wall;
+	if (!FindClimbWall(Wall))
+	{
+		SetMovementMode(MOVE_Falling);
+		StartNewPhysics(DeltaTime, Iterations);
+		return;
+	}
+
+	// 위로 이동 + 벽 쪽으로 붙이기
+	Velocity = FVector::UpVector * ClimbSpeed;
+
+	const FVector ToWall = -Wall.ImpactNormal * (Wall.Distance - WallStickDistance);
+	const FVector Delta  = Velocity * DeltaTime + ToWall;
+	const FRotator FaceWall = (-Wall.ImpactNormal).Rotation();
+
+	FHitResult Hit;
+	SafeMoveUpdatedComponent(Delta, FaceWall, true, Hit);
+	if (Hit.IsValidBlockingHit())
+	{
+		SlideAlongSurface(Delta, 1.f - Hit.Time, Hit.Normal, Hit, true);
+	}
+}
+
+void UKernelCharacterMovementComponent::PhysMantle(float DeltaTime, int32 Iterations)
+{
+	MantleElapsed += DeltaTime;
+	const float Alpha = FMath::Clamp(MantleElapsed / MantleDuration, 0.f, 1.f);
+
+	// 위로 먼저 올리고 앞으로 넘어가는 느낌 — Z를 빨리, XY를 나중에
+	const float ZAlpha  = FMath::InterpEaseOut(0.f, 1.f, Alpha, 2.f);
+	const float XYAlpha = FMath::InterpEaseIn(0.f, 1.f, Alpha, 2.f);
+
+	FVector NewLoc;
+	NewLoc.X = FMath::Lerp(MantleStart.X, MantleTarget.X, XYAlpha);
+	NewLoc.Y = FMath::Lerp(MantleStart.Y, MantleTarget.Y, XYAlpha);
+	NewLoc.Z = FMath::Lerp(MantleStart.Z, MantleTarget.Z, ZAlpha);
+
+	FHitResult Hit;
+	SafeMoveUpdatedComponent(NewLoc - UpdatedComponent->GetComponentLocation(),
+		UpdatedComponent->GetComponentQuat(), false, Hit);
+
+	if (Alpha >= 1.f)
+	{
+		SetMovementMode(MOVE_Walking);
+	}
+}
+
+void UKernelCharacterMovementComponent::StartMantle(const FVector& Top)
+{ 
+	const float HalfH = CharacterOwner->GetCapsuleComponent()->GetScaledCapsuleHalfHeight();
+
+	MantleStart  = UpdatedComponent->GetComponentLocation();
+	MantleTarget = Top + FVector(0.f, 0.f, HalfH + 2.f);
+	MantleElapsed = 0.f;
+	Velocity = FVector::ZeroVector;
+
+	SetMovementMode(MOVE_Custom, static_cast<uint8>(EKernelCustomMovementMode::Mantle));
+}
+
 
 float UKernelCharacterMovementComponent::GetMaxBrakingDeceleration() const
 {

@@ -57,7 +57,6 @@ void UBTService_EvaluateTarget::TickNode(UBehaviorTreeComponent& OwnerComp, uint
 
 	if (Candidates.Num() == 0)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("[EvaluateTarget] 후보 없음 → 타겟 해제"));
 		BB->ClearValue(GetSelectedBlackboardKey());
 		return;
 	}

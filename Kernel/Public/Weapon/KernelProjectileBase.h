@@ -37,11 +37,7 @@ protected:
 						 UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit);
 
 	void HandleHit(const FHitResult& Hit);
-
-	/** 명중 연출을 전 클라이언트에 — 액터가 곧 파괴되므로 Multicast로 미리 알린다 */
-	UFUNCTION(Client, Unreliable)
-	void Client_PlayImpact(UNiagaraSystem* Impact, const FVector_NetQuantize& Location, const FVector_NetQuantizeNormal& Normal);
-
+	
 	UPROPERTY(VisibleAnywhere) TObjectPtr<USphereComponent> CollisionComp;
 	UPROPERTY(VisibleAnywhere) TObjectPtr<UStaticMeshComponent> MeshComp;
 	UPROPERTY(VisibleAnywhere) TObjectPtr<UProjectileMovementComponent> ProjectileMovement;

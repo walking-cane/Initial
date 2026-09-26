@@ -87,7 +87,7 @@ void UKernelInteractionComponent::TraceForInteraction()
 
 	const FVector Start = Pawn->GetPawnViewLocation();
 	const FRotator ViewRot = Pawn->GetViewRotation();
-	const FVector End = Start + (ViewRot.Vector() * 200.0f);
+	const FVector End = Start + (ViewRot.Vector() * TraceDistance);
 	
 	FHitResult HitResult;
 	FCollisionQueryParams Params;

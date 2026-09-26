@@ -20,10 +20,10 @@ struct FKernelWaveEntry
 {
 	GENERATED_BODY()
 	
-	UPROPERTY(EditDefaultsOnly)
+	UPROPERTY(EditAnywhere)    
 	FGameplayTag SpawnTag;
-	
-	UPROPERTY(EditDefaultsOnly)
+
+	UPROPERTY(EditAnywhere)   
 	int32 SpawnCount = 1;
 };
 
@@ -32,14 +32,13 @@ struct FKernelWaveDefinition
 {
 	GENERATED_BODY()
 	
-	/** 에디터 표시용, "1-1", "보스" */
-	UPROPERTY(EditDefaultsOnly)
+	UPROPERTY(EditAnywhere)  
 	FName DisplayName;
-	
-	UPROPERTY(EditDefaultsOnly)
+
+	UPROPERTY(EditAnywhere)    
 	TArray<FKernelWaveEntry> Entries;
-	
-	UPROPERTY(EditDefaultsOnly)
+
+	UPROPERTY(EditAnywhere)    
 	float Delay = 2.f;
 };
 
@@ -66,7 +65,7 @@ protected:
 	UPROPERTY(EditInstanceOnly)
 	TArray<TObjectPtr<AKernelSpawnPoint>> SpawnPoints;
 	
-	UPROPERTY(EditDefaultsOnly)
+	UPROPERTY(EditAnywhere)
 	TArray<FKernelWaveDefinition> Waves;
 	
 	UFUNCTION()
@@ -79,6 +78,7 @@ protected:
 		const FHitResult& SweepResult);
 	
 private:
+	UPROPERTY(EditInstanceOnly) //EditInstanceOnly 속성 추가
 	TArray<TObjectPtr<AKernelEnemyCharacter>> AliveEnemies;
 	
 	void CheckWaveCleared();

@@ -6,6 +6,8 @@
 #include "Actors/GameplayProps/KernelRewardCrate.h"
 #include "Actors/GameplayProps/KernelSpawnPoint.h"
 #include "Components/BoxComponent.h"
+#include "Game/KernelGameModeBase.h"
+#include "Game/KernelTutorialGameMode.h"
 #include "KernelCharacter/KernelHealthComponent.h"
 #include "KernelCharacter/KernelPlayerState.h"
 #include "KernelCharacter/Enemy/KernelEnemyCharacter.h"
@@ -30,6 +32,16 @@ void AKernelEncounterVolume::OnOverlap(UPrimitiveComponent* OverlappedComponent,
                                                      UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
 	if (!HasAuthority() || bIsWaveActive) return;
+	
+	//* 추가 */
+	if (!AliveEnemies.IsEmpty())
+	{
+		TArray<AKernelEnemyCharacter*> Enemies;
+		RegisterEnemies(Enemies);
+		UE_LOG(LogTemp, Error, TEXT("[EncounterVolume] Register"));
+		
+		bIsWaveActive = true;
+	}
 	
 	if (SpawnPoints.IsEmpty())
 	{
@@ -65,6 +77,12 @@ void AKernelEncounterVolume::CheckWaveCleared()
 	
 	bIsWaveActive = false;
 	
+	if (AKernelTutorialGameMode* GM = GetWorld()->GetAuthGameMode<AKernelTutorialGameMode>())
+	{
+		GM->EndTutorial();
+		return;
+	}
+	
 	const int32 NextWaveIndex = CurrentWaveIndex + 1;
 	if (!Waves.IsValidIndex(NextWaveIndex))
 	{
@@ -92,6 +110,8 @@ void AKernelEncounterVolume::StartWave(int32 WaveIndex)
 			if (SpawnPoint && SpawnPoint->SpawnTag == Entry.SpawnTag)
 			{
 				MatchedPoints.Add(SpawnPoint);
+				UE_LOG(LogTemp,Log,TEXT("[EncounterVolume] Found Matched Tag : %s"), 
+					*SpawnPoint->SpawnTag.ToString());
 			}
 		}
 		
@@ -130,6 +150,25 @@ void AKernelEncounterVolume::HandleEnemyDeath(AActor* DeadEnemy)
 
 void AKernelEncounterVolume::RegisterEnemies(TArray<AKernelEnemyCharacter*>& Enemies)
 {
+	//* 추가 */
+	if (!AliveEnemies.IsEmpty() && Enemies.IsEmpty())
+	{
+		for (AKernelEnemyCharacter* Enemy : AliveEnemies)
+		{
+			if (!Enemy) continue;
+
+			UKernelHealthComponent* HC = Enemy->FindComponentByClass<UKernelHealthComponent>();
+			if (!HC) continue;
+		
+			AliveEnemies.AddUnique(Enemy);
+			HC->OnDeathStarted.AddDynamic(this, &ThisClass::HandleEnemyDeath);
+			
+			UE_LOG(LogTemp,Warning,TEXT("[EncounterVolume] Bind Existed Enemy! : %s"), *GetNameSafe(Enemy));
+		}
+		
+		return;
+	}
+	
 	for (AKernelEnemyCharacter* Enemy : Enemies)
 	{
 		UE_LOG(LogTemp,Warning,TEXT("[EncounterVolume] Spawned : %s"), *GetNameSafe(Enemy));

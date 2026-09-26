@@ -161,8 +161,7 @@ void UGA_FireBase::InitializeWeapon()
 	const UKernelItemFragment_Combat* StatFrag = ItemInst->FindFragmentByClass<UKernelItemFragment_Combat>();
 	const UKernelItemFragment_Weapon* WeaponFrag = ItemInst->FindFragmentByClass<UKernelItemFragment_Weapon>();
 	const UKernelItemFragment_Recoil* RecoilFrag = ItemInst->FindFragmentByClass<UKernelItemFragment_Recoil>();
-	const UKernelItemFragment_Cosmetic* CosmeticFrag = ItemInst->FindFragmentByClass<UKernelItemFragment_Cosmetic>();
-	
+
 	if (StatFrag)
 	{
 		FireDelay = StatFrag->FireDelay;
@@ -180,11 +179,6 @@ void UGA_FireBase::InitializeWeapon()
 		RecoilCurve = RecoilFrag->RecoilCurve;
 		CachedRecoilKick = RecoilFrag->KickAmount;
 		CachedMaxRecoilKick = RecoilFrag->MaxKickAmount;
-	}
-	
-	if (CosmeticFrag)
-	{
-		// TODO : Initialize WeaponMesh
 	}
 }
 
@@ -206,17 +200,6 @@ void UGA_FireBase::OnTargetDataReady(const FGameplayAbilityTargetDataHandle& Tar
 
 	FHitResult HitResult = UAbilitySystemBlueprintLibrary::GetHitResultFromTargetData(TargetData, 0);
 	if (!HitResult.GetActor()) return;
-
-	FGameplayEffectSpecHandle SpecHandle = MakeOutgoingGameplayEffectSpec(DamageEffectClass);
-	if (SpecHandle.IsValid())
-	{
-		SpecHandle.Data->SetSetByCallerMagnitude(TAG_Gameplay_Damage, Damage);
-
-		// GE에 붙은 큐들이 이 컨텍스트에서 위치/노멀/재질을 꺼내 쓴다.
-		SpecHandle.Data->GetContext().AddHitResult(HitResult);
-
-		(void)ApplyGameplayEffectSpecToTarget(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, SpecHandle, TargetData);
-	}
 	
 	for (int32 i = 0; i < TargetData.Num(); ++i)
 	{
@@ -229,6 +212,7 @@ void UGA_FireBase::OnTargetDataReady(const FGameplayAbilityTargetDataHandle& Tar
 			UAbilitySystemBlueprintLibrary::GetAbilitySystemComponent(Hit.GetActor());
 		if (!TargetASC) continue;
 
+		if (TargetASC->HasMatchingGameplayTag(TAG_Status_Death_Dying)) continue;
 		/*
 		FGameplayEffectSpecHandle Spec = MakeOutgoingGameplayEffectSpec(DamageEffectClass);
 		if (Spec.IsValid())
@@ -239,7 +223,26 @@ void UGA_FireBase::OnTargetDataReady(const FGameplayAbilityTargetDataHandle& Tar
 		}
 		*/
 		
+		FGameplayCueParameters FireParams;
+		FireParams.Normal = Hit.ImpactNormal;
+		FireParams.Location = Hit.ImpactPoint;
+		FireParams.Instigator = OwnerActor;
+
+		UAbilitySystemGlobals::Get().GetGameplayCueManager()->HandleGameplayCue(
+			OwnerActor, TAG_GameplayCue_Hit_Shield, EGameplayCueEvent::Executed, FireParams);
+		
 		UKernelAffixCombatLibrary::ApplyAffixOnHit(InstigatorASC, TargetASC, SourceWeapon, Hit);
+	}
+	
+	FGameplayEffectSpecHandle SpecHandle = MakeOutgoingGameplayEffectSpec(DamageEffectClass);
+	if (SpecHandle.IsValid())
+	{
+		SpecHandle.Data->SetSetByCallerMagnitude(TAG_Gameplay_Damage, Damage);
+
+		// GE에 붙은 큐들이 이 컨텍스트에서 위치/노멀/재질을 꺼내 쓴다.
+		SpecHandle.Data->GetContext().AddHitResult(HitResult);
+
+		(void)ApplyGameplayEffectSpecToTarget(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, SpecHandle, TargetData);
 	}
 }
 
@@ -271,15 +274,17 @@ bool UGA_FireBase::CalculateAimPoint(FVector& OutMuzzleLocation, FRotator& OutSp
 
 void UGA_FireBase::PlayMuzzleCue()
 {
-	if (!FireCueTag.IsValid() || !OwnerActor) return;
+	if (!OwnerActor) return;
 
-	USkeletalMeshComponent* MuzzleMesh = CurrentActorInfo->IsLocallyControlled() ? WeaponMesh1P : WeaponMesh3P;
-	if (!MuzzleMesh) return;
-
-	FGameplayCueParameters FireParams;
-	FireParams.Instigator = OwnerActor;
-	FireParams.Location = MuzzleMesh->GetSocketLocation(FName("Muzzle"));
+	FVector Loc;
+	FRotator Rot;
+	CalculateAimPoint(Loc, Rot);
 	
+	FGameplayCueParameters FireParams;
+	FireParams.Normal = Rot.Vector();
+	FireParams.Location = Loc;
+	FireParams.Instigator = OwnerActor;
+
 	UAbilitySystemGlobals::Get().GetGameplayCueManager()->HandleGameplayCue(
-		OwnerActor, FireCueTag, EGameplayCueEvent::Executed, FireParams);
+		OwnerActor, TAG_GameplayCue_Flatline_Fire, EGameplayCueEvent::Executed, FireParams);
 }

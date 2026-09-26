@@ -14,12 +14,14 @@
 #include "GameFramework/PawnMovementComponent.h"
 #include "GameFramework/PlayerState.h"
 #include "GameplayAbility/KernelAbilitySystemComponent.h"
+#include "GameplayAbility/KernelGameplayTags.h"
 #include "GameplayAbility/Attributes/KernelCombatAttributeSet.h"
 #include "GameplayAbility/Attributes/KernelHealthAttributeSet.h"
 #include "Item/KernelAffixRollLibrary.h"
 #include "KernelCharacter/KernelHealthComponent.h"
 #include "KernelCharacter/KernelPawnExtensionComponent.h"
 #include "KernelCharacter/KernelPlayerController.h"
+#include "Messages/KernelVerbMessage.h"
 
 AKernelEnemyCharacter::AKernelEnemyCharacter(const FObjectInitializer& ObjectInitializer)
 	:Super(ObjectInitializer)
@@ -66,6 +68,25 @@ void AKernelEnemyCharacter::BeginPlay()
 	
 	TryInitHealthBar();
 	InitializeASC();
+	
+	ChangeOutlineListenerHandle = UGameplayMessageSubsystem::Get(this).RegisterListener(
+		TAG_Gameplay_ChangeOutline, this, &ThisClass::ChangeOutline);
+}
+
+void AKernelEnemyCharacter::EndPlay(const EEndPlayReason::Type EndPlayReason)
+{
+	ChangeOutlineListenerHandle.Unregister();
+	
+	Super::EndPlay(EndPlayReason);
+}
+
+void AKernelEnemyCharacter::ChangeOutline(FGameplayTag Channel, const FKernelVerbMessage& Message)
+{
+	if (GetMesh()) 
+	{
+		GetMesh()->SetRenderCustomDepth(true);
+		GetMesh()->SetCustomDepthStencilValue(Message.Magnitude);
+	}
 }
 
 UAnimMontage* AKernelEnemyCharacter::GetDeathMontage()

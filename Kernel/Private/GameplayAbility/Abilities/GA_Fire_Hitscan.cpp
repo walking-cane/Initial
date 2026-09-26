@@ -48,7 +48,11 @@ void UGA_Fire_Hitscan::SpawnTracer(const FVector& TargetPoint)
 	if (!TracerClass) return;
 
 	FVector MuzzleLocation; FRotator SpawnRotation;
-	if (!CalculateAimPoint(MuzzleLocation, SpawnRotation)) return;
+	if (!CalculateAimPoint(MuzzleLocation, SpawnRotation))
+	{
+		UE_LOG(LogTemp,Warning,TEXT("NO AIM POINT"))
+		return;
+	}
 
 	// 명중 지점을 향하도록 회전을 다시 계산 (트레이스 결과 기준)
 	SpawnRotation = (TargetPoint - MuzzleLocation).Rotation();

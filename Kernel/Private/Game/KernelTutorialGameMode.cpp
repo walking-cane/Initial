@@ -3,3 +3,7 @@
 
 #include "Game/KernelTutorialGameMode.h"
 
+void AKernelTutorialGameMode::BeginPlay()
+{
+	Super::BeginPlay();
+}

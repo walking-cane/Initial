@@ -6,8 +6,10 @@
 #include "KernelCharacter/KernelCharacterBase.h"
 #include "Item/KernelItemTypes.h"
 #include "Cosmetics/KernelCosmeticInterface.h"
+#include "GameFramework/GameplayMessageSubsystem.h"
 #include "KernelEnemyCharacter.generated.h"
 
+struct FKernelVerbMessage;
 class UTimelineComponent;
 class UKernelHealthComponent;
 class UKernelCombatAttributeSet;
@@ -44,11 +46,14 @@ protected:
 
 	UPROPERTY(EditDefaultsOnly, Category = "Dissolve")
 	FName DissolveParamName = FName("DissolveAmount");
+
+	UFUNCTION() void ChangeOutline(FGameplayTag Channel, const FKernelVerbMessage& Message);
 	
 public:
 	AKernelEnemyCharacter(const FObjectInitializer& ObjectInitializer);
 	
 	virtual void BeginPlay() override;
+	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 	virtual UAnimMontage* GetDeathMontage() override;
 	virtual void DropItemOnDeath();
 	
@@ -59,6 +64,7 @@ public:
 	void ResetDissolve();
 	
 private:
+	FGameplayMessageListenerHandle ChangeOutlineListenerHandle;
 	FTimerHandle RetryBindHandle;
 	
 	UFUNCTION() void HandleDissolveProgress(float Value);

@@ -6,6 +6,8 @@
 #include "GameFramework/GameModeBase.h"
 #include "KernelTutorialGameMode.generated.h"
 
+class AKernelEnemyCharacter;
+class AKernelSpawnPoint;
 /**
  * 
  */
@@ -14,4 +16,13 @@ class KERNEL_API AKernelTutorialGameMode : public AGameModeBase
 {
 	GENERATED_BODY()
 	
+	UPROPERTY(EditInstanceOnly)
+	TArray<TObjectPtr<AKernelSpawnPoint>> SpawnPoint;
+	
+protected:
+	virtual void BeginPlay() override;
+
+public:
+	UFUNCTION(BlueprintImplementableEvent)
+	void EndTutorial();
 };
